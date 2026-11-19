@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramientas Documentos v29 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v31 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1593,13 +1593,31 @@
                     <button type="button" onclick="openSuiteMailCompose()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition shadow-md flex items-center gap-2">
                         <i class="fa-solid fa-pen-to-square"></i> <span>Redactar Nuevo</span>
                     </button>
-                    <button type="button" onclick="switchMailFolder('inbox')" id="mailFolderBtn_inbox" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700">
+                    <button type="button" onclick="switchMailFolder('inbox')" id="mailFolderBtn_inbox" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700">
                         <i class="fa-solid fa-inbox"></i> <span>Recibidos</span>
                         <span id="mailInboxUnreadBadge" class="hidden px-1.5 py-0.5 bg-brand-600 text-white text-[10px] rounded-full font-bold">0</span>
                     </button>
-                    <button type="button" onclick="switchMailFolder('sent')" id="mailFolderBtn_sent" class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                    <button type="button" onclick="switchMailFolder('starred')" id="mailFolderBtn_starred" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        <i class="fa-solid fa-star text-amber-500"></i> <span>Destacados</span>
+                    </button>
+                    <button type="button" onclick="switchMailFolder('sent')" id="mailFolderBtn_sent" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
                         <i class="fa-solid fa-paper-plane"></i> <span>Enviados</span>
                     </button>
+                    <button type="button" onclick="switchMailFolder('drafts')" id="mailFolderBtn_drafts" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        <i class="fa-solid fa-file-pen"></i> <span>Borradores</span>
+                    </button>
+                    <button type="button" onclick="switchMailFolder('all')" id="mailFolderBtn_all" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        <i class="fa-solid fa-envelopes-bulk"></i> <span>Todos</span>
+                    </button>
+                    <button type="button" onclick="switchMailFolder('spam')" id="mailFolderBtn_spam" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        <i class="fa-solid fa-circle-exclamation text-amber-600"></i> <span>Spam</span>
+                    </button>
+                    <button type="button" onclick="switchMailFolder('trash')" id="mailFolderBtn_trash" class="mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        <i class="fa-solid fa-trash-can text-red-500"></i> <span>Papelera</span>
+                    </button>
+                    <select id="mailUserLabelFilterSelect" onchange="onSelectMailUserLabelFilter(this.value)" title="Filtrar por etiqueta personalizada de Gmail" class="px-2.5 py-2 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer max-w-[165px]">
+                        <option value="">Etiquetas...</option>
+                    </select>
                     <button type="button" onclick="loadMailThreads(true)" id="btnRefreshMail" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl transition border border-gray-200 dark:border-gray-600 flex items-center gap-1.5" title="Actualizar bandeja en tiempo real">
                         <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Actualizar</span>
                     </button>
@@ -1660,21 +1678,66 @@
 
                     <div id="mailThreadViewer" class="hidden flex-1 flex flex-col">
                         <!-- Cabecera del hilo -->
-                        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-700/30 flex flex-wrap items-start justify-between gap-3">
-                            <div class="min-w-0 flex-1">
-                                <h3 id="mailViewSubject" class="font-bold text-base text-gray-900 dark:text-white break-words">Asunto del correo</h3>
-                                <p id="mailViewMeta" class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">--</p>
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-700/30 space-y-2.5">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <h3 id="mailViewSubject" class="font-bold text-base text-gray-900 dark:text-white break-words">Asunto del correo</h3>
+                                    <div class="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                        <span id="mailViewMeta">--</span>
+                                        <button type="button" onclick="searchByCurrentMailSender()" class="text-brand-600 dark:text-brand-400 hover:underline font-semibold flex items-center gap-1" title="Buscar todos los correos de este remitente">
+                                            <i class="fa-solid fa-magnifying-glass text-[10px]"></i> Más de este remitente
+                                        </button>
+                                        <button type="button" onclick="searchByCurrentMailSubject()" class="text-brand-600 dark:text-brand-400 hover:underline font-semibold flex items-center gap-1" title="Buscar todos los correos con este mismo asunto">
+                                            <i class="fa-solid fa-filter text-[10px]"></i> Mismo asunto
+                                        </button>
+                                    </div>
+                                    <div id="mailViewLabelsBadges" class="flex flex-wrap gap-1 mt-1.5"></div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-1.5 flex-shrink-0">
+                                    <button type="button" id="btnStarMailThread" onclick="toggleStarCurrentMailThread()" class="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition" title="Destacar / Quitar estrella">
+                                        <i id="iconStarMailThread" class="fa-regular fa-star text-sm"></i>
+                                    </button>
+                                    <button type="button" onclick="markCurrentMailThreadUnread()" class="p-1.5 text-gray-500 hover:text-brand-600 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition" title="Marcar como no leído">
+                                        <i class="fa-solid fa-envelope text-xs"></i>
+                                    </button>
+                                    <button type="button" id="btnArchiveMailThread" onclick="archiveCurrentMailThread()" class="p-1.5 text-gray-600 dark:text-gray-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-700 rounded-lg transition" title="Archivar (sacar de Recibidos sin eliminar)">
+                                        <i class="fa-solid fa-box-archive text-xs"></i>
+                                    </button>
+                                    <button type="button" onclick="exportCurrentMailThreadToPdf()" class="p-1.5 text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition" title="Guardar conversación como PDF">
+                                        <i class="fa-solid fa-file-pdf text-xs"></i>
+                                    </button>
+                                    <button type="button" id="btnRestoreMailThread" onclick="restoreCurrentMailThread()" class="hidden px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition flex items-center gap-1" title="Restaurar conversación a Recibidos">
+                                        <i class="fa-solid fa-rotate-left"></i> Restaurar
+                                    </button>
+                                    <button type="button" id="btnSpamMailThread" onclick="markCurrentMailThreadSpam()" class="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-lg transition" title="Marcar como Spam">
+                                        <i class="fa-solid fa-circle-exclamation text-xs"></i>
+                                    </button>
+                                    <button type="button" id="btnTrashMailThread" onclick="trashCurrentMailThread()" class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition" title="Mover conversación a la papelera">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-1.5 flex-shrink-0">
-                                <button type="button" onclick="replyCurrentMailThread(false)" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg transition flex items-center gap-1">
-                                    <i class="fa-solid fa-reply"></i> Responder
-                                </button>
-                                <button type="button" onclick="forwardCurrentMailThread()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-bold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-1">
-                                    <i class="fa-solid fa-share"></i> Reenviar
-                                </button>
-                                <button type="button" onclick="trashCurrentMailThread()" class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition" title="Mover conversación a la papelera">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
+
+                            <!-- Fila secundaria de acciones de respuesta y etiquetado -->
+                            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-200/70 dark:border-gray-700/70">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button" onclick="replyCurrentMailThread(false)" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg transition flex items-center gap-1">
+                                        <i class="fa-solid fa-reply"></i> Responder
+                                    </button>
+                                    <button type="button" onclick="replyCurrentMailThread(true)" class="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 dark:hover:bg-brand-900/60 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 text-xs font-bold rounded-lg transition flex items-center gap-1">
+                                        <i class="fa-solid fa-reply-all"></i> Responder a todos
+                                    </button>
+                                    <button type="button" onclick="forwardCurrentMailThread()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-bold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-1">
+                                        <i class="fa-solid fa-share"></i> Reenviar
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fa-solid fa-tag text-gray-400 text-xs"></i>
+                                    <select id="mailThreadApplyLabelSelect" onchange="applyOrToggleLabelOnCurrentThread(this.value); this.value='';" class="px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs font-semibold focus:outline-none max-w-[180px]">
+                                        <option value="">+ Etiquetar / Mover...</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -7441,10 +7504,13 @@ REGLAS:
         let pendingPostAuthAction = null;
 
         let currentMailFolder = 'inbox';
+        let currentMailLabelFilter = '';
         let currentMailQuery = '';
         let currentMailThreads = [];
         let activeMailThreadData = null;
         let mailComposeAttachments = [];
+        let gmailUserLabelsList = [];
+        let currentConnectedMailAddress = 'asesor@solivent.eu';
 
         function getGmailClientId() {
             return (localStorage.getItem('solivent_gmail_client_id') || DEFAULT_GMAIL_CLIENT_ID).trim();
@@ -7605,8 +7671,57 @@ REGLAS:
                     inboxBadge.innerText = unread;
                     inboxBadge.classList.toggle('hidden', !unread);
                 }
-                updateMailConnectionUI(true, profile.emailAddress || 'asesor@solivent.eu');
+                currentConnectedMailAddress = profile.emailAddress || 'asesor@solivent.eu';
+                updateMailConnectionUI(true, currentConnectedMailAddress);
+                await loadGmailUserLabels();
             } catch (e) {}
+        }
+
+        async function loadGmailUserLabels() {
+            if (!gmailAccessToken || Date.now() >= gmailTokenExpiresAt) return;
+            try {
+                const res = await gmailApiFetch('/labels');
+                const allLabels = res.labels || [];
+                gmailUserLabelsList = allLabels
+                    .filter(l => l.type === 'user')
+                    .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+                const filterSel = document.getElementById('mailUserLabelFilterSelect');
+                if (filterSel) {
+                    const prev = filterSel.value;
+                    filterSel.innerHTML = '<option value="">Etiquetas...</option>' +
+                        gmailUserLabelsList.map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
+                    filterSel.value = prev;
+                }
+
+                const applySel = document.getElementById('mailThreadApplyLabelSelect');
+                if (applySel) {
+                    applySel.innerHTML = '<option value="">+ Etiquetar / Mover...</option>' +
+                        gmailUserLabelsList.map(l => `<option value="${escapeHtml(l.id)}">${escapeHtml(l.name)}</option>`).join('');
+                }
+            } catch (e) {}
+        }
+
+        function onSelectMailUserLabelFilter(labelId) {
+            if (!labelId) {
+                switchMailFolder('inbox');
+                return;
+            }
+            currentMailFolder = 'label';
+            currentMailLabelFilter = labelId;
+            currentMailQuery = '';
+            document.getElementById('mailSearchInput').value = '';
+
+            Object.keys(MAIL_FOLDERS_META).forEach(f => {
+                const btn = document.getElementById(`mailFolderBtn_${f}`);
+                if (btn) {
+                    btn.className = 'mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+                }
+            });
+
+            const lblObj = gmailUserLabelsList.find(l => l.id === labelId);
+            document.getElementById('mailListHeaderTitle').innerText = lblObj ? `Etiqueta: ${lblObj.name}` : 'Etiqueta seleccionada';
+            loadMailThreads(false);
         }
 
         function initMailSection() {
@@ -7621,31 +7736,45 @@ REGLAS:
             }
         }
 
+        const MAIL_FOLDERS_META = {
+            inbox: { label: 'Bandeja de Entrada (Recibidos)', labelId: 'INBOX', includeSpamTrash: false },
+            starred: { label: 'Correos Destacados', labelId: 'STARRED', includeSpamTrash: false },
+            sent: { label: 'Correos Enviados', labelId: 'SENT', includeSpamTrash: false },
+            drafts: { label: 'Borradores', labelId: 'DRAFT', includeSpamTrash: false },
+            all: { label: 'Todos los Correos', labelId: null, includeSpamTrash: false },
+            spam: { label: 'Correo No Deseado (Spam)', labelId: 'SPAM', includeSpamTrash: true },
+            trash: { label: 'Papelera (Eliminados)', labelId: 'TRASH', includeSpamTrash: true }
+        };
+
         function switchMailFolder(folder) {
             currentMailFolder = folder;
+            currentMailLabelFilter = '';
             currentMailQuery = '';
             document.getElementById('mailSearchInput').value = '';
+            const lblFilter = document.getElementById('mailUserLabelFilterSelect');
+            if (lblFilter) lblFilter.value = '';
 
-            ['inbox', 'sent'].forEach(f => {
+            Object.keys(MAIL_FOLDERS_META).forEach(f => {
                 const btn = document.getElementById(`mailFolderBtn_${f}`);
                 if (!btn) return;
                 if (f === folder) {
-                    btn.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700';
+                    btn.className = 'mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700';
                 } else {
-                    btn.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+                    btn.className = 'mail-folder-btn px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
                 }
             });
 
-            document.getElementById('mailListHeaderTitle').innerText =
-                folder === 'sent' ? 'Correos Enviados' : 'Bandeja de Entrada (Recibidos)';
+            const meta = MAIL_FOLDERS_META[folder] || MAIL_FOLDERS_META.inbox;
+            document.getElementById('mailListHeaderTitle').innerText = meta.label;
             loadMailThreads(false);
         }
 
         function searchSuiteMail(e) {
             e.preventDefault();
             currentMailQuery = document.getElementById('mailSearchInput').value.trim();
+            const meta = MAIL_FOLDERS_META[currentMailFolder] || MAIL_FOLDERS_META.inbox;
             document.getElementById('mailListHeaderTitle').innerText =
-                currentMailQuery ? `Resultados: "${currentMailQuery}"` : (currentMailFolder === 'sent' ? 'Correos Enviados' : 'Bandeja de Entrada (Recibidos)');
+                currentMailQuery ? `Resultados: "${currentMailQuery}"` : meta.label;
             loadMailThreads(false);
         }
 
@@ -7735,12 +7864,15 @@ REGLAS:
             listEl.innerHTML = '<div class="p-8 text-center text-xs text-gray-400"><i class="fa-solid fa-spinner fa-spin text-brand-600 mr-1.5"></i> Sincronizando con Google Workspace...</div>';
 
             try {
-                let queryPath = `/threads?maxResults=20`;
+                const meta = MAIL_FOLDERS_META[currentMailFolder] || MAIL_FOLDERS_META.inbox;
+                let queryPath = `/threads?maxResults=25`;
                 if (currentMailQuery) {
-                    queryPath += `&q=${encodeURIComponent(currentMailQuery)}`;
+                    queryPath += `&q=${encodeURIComponent(currentMailQuery)}&includeSpamTrash=true`;
+                } else if (currentMailFolder === 'label' && currentMailLabelFilter) {
+                    queryPath += `&labelIds=${encodeURIComponent(currentMailLabelFilter)}`;
                 } else {
-                    const labelId = currentMailFolder === 'sent' ? 'SENT' : 'INBOX';
-                    queryPath += `&labelIds=${labelId}`;
+                    if (meta.labelId) queryPath += `&labelIds=${meta.labelId}`;
+                    if (meta.includeSpamTrash) queryPath += `&includeSpamTrash=true`;
                 }
 
                 const listRes = await gmailApiFetch(queryPath);
@@ -7754,6 +7886,7 @@ REGLAS:
                     const firstHeaders = first.payload?.headers || [];
                     const lastHeaders = last.payload?.headers || [];
                     const isUnread = msgs.some(m => Array.isArray(m.labelIds) && m.labelIds.includes('UNREAD'));
+                    const isStarred = msgs.some(m => Array.isArray(m.labelIds) && m.labelIds.includes('STARRED'));
 
                     return {
                         id: th.id,
@@ -7763,6 +7896,7 @@ REGLAS:
                         date: getHeaderVal(lastHeaders, 'Date') || (last.internalDate ? new Date(parseInt(last.internalDate, 10)).toISOString() : ''),
                         snippet: decodeHtmlEntities(th.snippet || last.snippet || ''),
                         unread: isUnread,
+                        starred: isStarred,
                         msgCount: msgs.length,
                         hasAttachments: msgs.some(m => hasAnyAttachmentInParts(m.payload))
                     };
@@ -7785,13 +7919,15 @@ REGLAS:
         function renderMailThreadsList() {
             const listEl = document.getElementById('mailThreadsList');
             if (currentMailThreads.length === 0) {
-                listEl.innerHTML = '<div class="p-8 text-center text-xs text-gray-400">No hay correos en esta vista.</div>';
+                listEl.innerHTML = '<div class="p-8 text-center text-xs text-gray-400">No hay correos en esta carpeta.</div>';
                 return;
             }
 
             listEl.innerHTML = currentMailThreads.map(t => {
                 const isSelected = activeMailThreadData && activeMailThreadData.id === t.id;
-                const party = currentMailFolder === 'sent' ? `Para: ${extractSenderDisplay(t.to)}` : extractSenderDisplay(t.from);
+                const party = (currentMailFolder === 'sent' || currentMailFolder === 'drafts')
+                    ? `Para: ${extractSenderDisplay(t.to) || '(Borrador sin destinatario)'}`
+                    : extractSenderDisplay(t.from);
                 return `
                     <div onclick="openMailThread('${escapeJs(t.id)}')" class="p-3.5 cursor-pointer transition hover:bg-blue-50/60 dark:hover:bg-gray-700/50 ${isSelected ? 'bg-blue-50 dark:bg-brand-900/30 border-l-4 border-brand-600' : ''} ${t.unread ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/40 dark:bg-gray-800/60'}">
                         <div class="flex items-center justify-between gap-2 text-xs">
@@ -7800,6 +7936,9 @@ REGLAS:
                                 ${t.msgCount > 1 ? `<span class="text-[10px] text-gray-400 font-normal ml-1">(${t.msgCount})</span>` : ''}
                             </span>
                             <div class="flex items-center gap-1.5 flex-shrink-0 text-[11px] text-gray-400">
+                                <button type="button" onclick="event.stopPropagation(); toggleStarThreadFromList('${escapeJs(t.id)}', ${!t.starred})" class="hover:text-amber-500 transition" title="${t.starred ? 'Quitar de destacados' : 'Destacar'}">
+                                    <i class="${t.starred ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-gray-300 dark:text-gray-600'}"></i>
+                                </button>
                                 ${t.hasAttachments ? '<i class="fa-solid fa-paperclip text-gray-400"></i>' : ''}
                                 <span>${formatMailShortDate(t.date)}</span>
                             </div>
@@ -7813,6 +7952,18 @@ REGLAS:
                     </div>
                 `;
             }).join('');
+        }
+
+        function updateViewerFolderActionButtons(isStarred) {
+            const starIcon = document.getElementById('iconStarMailThread');
+            if (starIcon) {
+                starIcon.className = isStarred ? 'fa-solid fa-star text-amber-500 text-sm' : 'fa-regular fa-star text-sm';
+            }
+            const btnRestore = document.getElementById('btnRestoreMailThread');
+            const btnSpam = document.getElementById('btnSpamMailThread');
+            const isTrashOrSpam = currentMailFolder === 'trash' || currentMailFolder === 'spam';
+            if (btnRestore) btnRestore.classList.toggle('hidden', !isTrashOrSpam);
+            if (btnSpam) btnSpam.classList.toggle('hidden', currentMailFolder === 'spam');
         }
 
         async function openMailThread(threadId) {
@@ -7832,6 +7983,9 @@ REGLAS:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ removeLabelIds: ['UNREAD'] })
                 }).catch(() => {});
+
+                const allThreadLabelIds = Array.from(new Set((th.messages || []).flatMap(m => Array.isArray(m.labelIds) ? m.labelIds : [])));
+                const isStarred = allThreadLabelIds.includes('STARRED');
 
                 const parsedMessages = (th.messages || []).map(m => {
                     const headers = m.payload?.headers || [];
@@ -7855,9 +8009,11 @@ REGLAS:
                     };
                 });
 
-                activeMailThreadData = { id: th.id, messages: parsedMessages };
+                activeMailThreadData = { id: th.id, starred: isStarred, labelIds: allThreadLabelIds, messages: parsedMessages };
+                updateViewerFolderActionButtons(isStarred);
+                renderActiveThreadLabelBadges();
 
-                currentMailThreads = currentMailThreads.map(t => t.id === threadId ? { ...t, unread: false } : t);
+                currentMailThreads = currentMailThreads.map(t => t.id === threadId ? { ...t, unread: false, starred: isStarred } : t);
                 renderMailThreadsList();
                 refreshHomeMailBadge();
 
@@ -7922,8 +8078,100 @@ REGLAS:
             }
         }
 
+        async function toggleStarThreadFromList(threadId, makeStarred) {
+            try {
+                await gmailApiFetch(`/threads/${threadId}/modify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(makeStarred ? { addLabelIds: ['STARRED'] } : { removeLabelIds: ['STARRED'] })
+                });
+                currentMailThreads = currentMailThreads.map(t => t.id === threadId ? { ...t, starred: makeStarred } : t);
+                if (activeMailThreadData && activeMailThreadData.id === threadId) {
+                    activeMailThreadData.starred = makeStarred;
+                    updateViewerFolderActionButtons(makeStarred);
+                }
+                renderMailThreadsList();
+                showToast(makeStarred ? 'Marcado como destacado' : 'Estrella quitada');
+            } catch (err) {
+                showToast('Error al actualizar destacado');
+            }
+        }
+
+        async function toggleStarCurrentMailThread() {
+            if (!activeMailThreadData) return;
+            await toggleStarThreadFromList(activeMailThreadData.id, !activeMailThreadData.starred);
+        }
+
+        async function markCurrentMailThreadUnread() {
+            if (!activeMailThreadData) return;
+            try {
+                await gmailApiFetch(`/threads/${activeMailThreadData.id}/modify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ addLabelIds: ['UNREAD'] })
+                });
+                currentMailThreads = currentMailThreads.map(t => t.id === activeMailThreadData.id ? { ...t, unread: true } : t);
+                renderMailThreadsList();
+                refreshHomeMailBadge();
+                showToast('Marcado como no leído');
+            } catch (err) {
+                showToast('Error al marcar como no leído');
+            }
+        }
+
+        async function markCurrentMailThreadSpam() {
+            if (!activeMailThreadData) return;
+            if (!confirm('¿Marcar esta conversación como Spam?')) return;
+            try {
+                await gmailApiFetch(`/threads/${activeMailThreadData.id}/modify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ addLabelIds: ['SPAM'], removeLabelIds: ['INBOX'] })
+                });
+                showToast('Movido a Spam');
+                activeMailThreadData = null;
+                document.getElementById('mailThreadViewer').classList.add('hidden');
+                document.getElementById('mailThreadEmptyState').classList.remove('hidden');
+                loadMailThreads(false);
+            } catch (err) {
+                showToast('Error al mover a Spam');
+            }
+        }
+
+        async function restoreCurrentMailThread() {
+            if (!activeMailThreadData) return;
+            try {
+                await gmailApiFetch(`/threads/${activeMailThreadData.id}/modify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ addLabelIds: ['INBOX'], removeLabelIds: ['TRASH', 'SPAM'] })
+                });
+                showToast('Conversación restaurada a Recibidos');
+                activeMailThreadData = null;
+                document.getElementById('mailThreadViewer').classList.add('hidden');
+                document.getElementById('mailThreadEmptyState').classList.remove('hidden');
+                loadMailThreads(false);
+            } catch (err) {
+                showToast('Error al restaurar conversación');
+            }
+        }
+
         async function trashCurrentMailThread() {
             if (!activeMailThreadData) return;
+            if (currentMailFolder === 'trash') {
+                if (!confirm('Esta conversación ya está en la Papelera. ¿Eliminarla DEFINITIVAMENTE? Esta acción no se puede deshacer.')) return;
+                try {
+                    await gmailApiFetch(`/threads/${activeMailThreadData.id}`, { method: 'DELETE' });
+                    showToast('Conversación eliminada definitivamente');
+                    activeMailThreadData = null;
+                    document.getElementById('mailThreadViewer').classList.add('hidden');
+                    document.getElementById('mailThreadEmptyState').classList.remove('hidden');
+                    loadMailThreads(false);
+                } catch (err) {
+                    showToast('Error al eliminar definitivamente');
+                }
+                return;
+            }
             if (!confirm('¿Mover esta conversación a la papelera de Google Workspace?')) return;
             try {
                 await gmailApiFetch(`/threads/${activeMailThreadData.id}/trash`, { method: 'POST' });
@@ -7943,15 +8191,156 @@ REGLAS:
             return m ? m[1].trim() : rawStr.trim();
         }
 
-        function replyCurrentMailThread() {
+        function renderActiveThreadLabelBadges() {
+            const box = document.getElementById('mailViewLabelsBadges');
+            if (!box || !activeMailThreadData) return;
+            const userIds = (activeMailThreadData.labelIds || []).filter(id => gmailUserLabelsList.some(l => l.id === id));
+            if (userIds.length === 0) {
+                box.innerHTML = '';
+                return;
+            }
+            box.innerHTML = userIds.map(id => {
+                const lbl = gmailUserLabelsList.find(l => l.id === id);
+                if (!lbl) return '';
+                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                    <i class="fa-solid fa-tag text-[9px] text-brand-600"></i>
+                    <span>${escapeHtml(lbl.name)}</span>
+                    <button type="button" onclick="removeLabelFromCurrentThread('${escapeJs(id)}')" class="hover:text-red-500 ml-0.5" title="Quitar etiqueta">&times;</button>
+                </span>`;
+            }).join('');
+        }
+
+        async function applyOrToggleLabelOnCurrentThread(labelId) {
+            if (!activeMailThreadData || !labelId) return;
+            const hasLabel = (activeMailThreadData.labelIds || []).includes(labelId);
+            try {
+                await gmailApiFetch(`/threads/${activeMailThreadData.id}/modify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(hasLabel ? { removeLabelIds: [labelId] } : { addLabelIds: [labelId] })
+                });
+                if (hasLabel) {
+                    activeMailThreadData.labelIds = activeMailThreadData.labelIds.filter(x => x !== labelId);
+                    showToast('Etiqueta quitada');
+                } else {
+                    activeMailThreadData.labelIds.push(labelId);
+                    showToast('Etiqueta aplicada');
+                }
+                renderActiveThreadLabelBadges();
+            } catch (err) {
+                showToast('Error al actualizar etiqueta');
+            }
+        }
+
+        async function removeLabelFromCurrentThread(labelId) {
+            await applyOrToggleLabelOnCurrentThread(labelId);
+        }
+
+        async function archiveCurrentMailThread() {
+            if (!activeMailThreadData) return;
+            try {
+                await gmailApiFetch(`/threads/${activeMailThreadData.id}/modify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ removeLabelIds: ['INBOX'] })
+                });
+                showToast('Conversación archivada (disponible en "Todos")');
+                activeMailThreadData = null;
+                document.getElementById('mailThreadViewer').classList.add('hidden');
+                document.getElementById('mailThreadEmptyState').classList.remove('hidden');
+                loadMailThreads(false);
+            } catch (err) {
+                showToast('Error al archivar conversación');
+            }
+        }
+
+        function searchByCurrentMailSender() {
+            if (!activeMailThreadData || !activeMailThreadData.messages || activeMailThreadData.messages.length === 0) return;
+            const firstMsg = activeMailThreadData.messages[0];
+            const senderEmail = extractEmailAddressOnly(firstMsg.from);
+            if (!senderEmail) return;
+            const q = `from:${senderEmail}`;
+            document.getElementById('mailSearchInput').value = q;
+            currentMailQuery = q;
+            document.getElementById('mailListHeaderTitle').innerText = `De: ${senderEmail}`;
+            loadMailThreads(false);
+        }
+
+        function searchByCurrentMailSubject() {
+            if (!activeMailThreadData || !activeMailThreadData.messages || activeMailThreadData.messages.length === 0) return;
+            const rawSubj = (activeMailThreadData.messages[0].subject || '').replace(/^(re|rv|fwd):\s*/i, '').trim();
+            if (!rawSubj) return;
+            const q = `subject:"${rawSubj}"`;
+            document.getElementById('mailSearchInput').value = q;
+            currentMailQuery = q;
+            document.getElementById('mailListHeaderTitle').innerText = `Asunto: ${rawSubj}`;
+            loadMailThreads(false);
+        }
+
+        function exportCurrentMailThreadToPdf() {
+            if (!activeMailThreadData || !activeMailThreadData.messages || activeMailThreadData.messages.length === 0) return;
+            const first = activeMailThreadData.messages[0];
+            const subj = first.subject || 'Correo_Solivent';
+            const printWin = window.open('', '_blank', 'width=850,height=750');
+            if (!printWin) {
+                showToast('Permite ventanas emergentes para guardar como PDF');
+                return;
+            }
+            const msgsHtml = activeMailThreadData.messages.map(m => `
+                <div style="border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:14px; page-break-inside:avoid;">
+                    <div style="border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:10px; font-size:12px;">
+                        <div><strong>De:</strong> ${escapeHtml(m.from)}</div>
+                        <div><strong>Para:</strong> ${escapeHtml(m.to)}${m.cc ? ' &nbsp;|&nbsp; <strong>CC:</strong> ' + escapeHtml(m.cc) : ''}</div>
+                        <div><strong>Fecha:</strong> ${escapeHtml(m.date)}</div>
+                    </div>
+                    <div style="font-size:13px; line-height:1.5; white-space:pre-wrap; font-family:Arial,sans-serif;">${escapeHtml(m.bodyPlain || '')}</div>
+                </div>
+            `).join('');
+
+            printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(subj)}</title></head><body style="font-family:Arial,sans-serif; color:#0f172a; padding:24px;">
+                <div style="border-bottom:2px solid #1e3a8a; padding-bottom:10px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:11px; color:#64748b; text-transform:uppercase; font-weight:bold;">Sol i Vent Paisajes S.L. · Correo Corporativo</div>
+                        <h2 style="margin:4px 0 0 0; font-size:18px; color:#1e3a8a;">${escapeHtml(subj)}</h2>
+                    </div>
+                </div>
+                ${msgsHtml}
+                <script>window.onload = function(){ window.print(); };<\/script>
+            </body></html>`);
+            printWin.document.close();
+        }
+
+        function extractAllEmailAddresses(rawListStr) {
+            if (!rawListStr) return [];
+            return rawListStr.split(',').map(part => extractEmailAddressOnly(part)).filter(Boolean);
+        }
+
+        function replyCurrentMailThread(replyAll = false) {
             if (!activeMailThreadData || !activeMailThreadData.messages || activeMailThreadData.messages.length === 0) return;
             const lastMsg = activeMailThreadData.messages[activeMailThreadData.messages.length - 1];
             const replyTo = extractEmailAddressOnly(lastMsg.from);
             const subj = lastMsg.subject && /^re:/i.test(lastMsg.subject) ? lastMsg.subject : `Re: ${lastMsg.subject || ''}`;
+
+            let ccList = '';
+            if (replyAll) {
+                const selfLower = (currentConnectedMailAddress || 'asesor@solivent.eu').toLowerCase();
+                const primaryLower = replyTo.toLowerCase();
+                const allRecipients = [
+                    ...extractAllEmailAddresses(lastMsg.to),
+                    ...extractAllEmailAddresses(lastMsg.cc)
+                ];
+                const uniqueCc = Array.from(new Set(allRecipients.filter(addr => {
+                    const low = addr.toLowerCase();
+                    return low !== selfLower && low !== primaryLower;
+                })));
+                ccList = uniqueCc.join(', ');
+            }
+
             openSuiteMailCompose({
                 threadId: activeMailThreadData.id,
                 inReplyTo: lastMsg.messageIdHeader || '',
                 to: replyTo,
+                cc: ccList,
                 subject: subj,
                 body: `\n\n--- El ${lastMsg.date} ${lastMsg.from} escribió: ---\n${lastMsg.bodyPlain || ''}`
             });
