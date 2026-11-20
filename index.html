@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v37 (Auditoría Completa) - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v38 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2871,6 +2871,12 @@
             renderHomeModules();
         }
 
+        function openModuleInNewTab(tabKey) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tabKey);
+            window.open(url.toString(), '_blank', 'noopener');
+        }
+
         function renderHomeModules() {
             const container = document.getElementById('homeModulesGrid');
             if (!container) return;
@@ -2878,15 +2884,21 @@
             const modules = getHomeModulesOrder();
             container.innerHTML = modules.map(m => `
                 <div draggable="true" data-key="${m.key}" onclick="handleHomeModuleClick('${m.key}')" 
-                     class="home-module-card relative p-5 h-full bg-white dark:bg-gray-800 hover:border-brand-500 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing flex items-center gap-3.5 select-none">
-                    ${m.key === 'notes' ? '<span id="homeAlertsBadge" class="hidden absolute top-3.5 right-3.5 px-2 py-0.5 bg-red-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
-                    ${m.key === 'mail' ? '<span id="homeMailUnreadBadge" class="hidden absolute top-3.5 right-3.5 px-2 py-0.5 bg-brand-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
+                     class="home-module-card group relative p-5 h-full bg-white dark:bg-gray-800 hover:border-brand-500 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing flex items-center gap-3.5 select-none">
+                    ${m.key === 'notes' ? '<span id="homeAlertsBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-red-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
+                    ${m.key === 'mail' ? '<span id="homeMailUnreadBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-brand-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
+                    <button type="button" onclick="event.stopPropagation(); openModuleInNewTab('${m.key}')" class="${m.key === 'mail' ? 'hidden' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'} absolute bottom-2.5 right-2.5 p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Abrir este módulo en una pestaña nueva">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </button>
                     <i class="fa-solid fa-grip-vertical text-gray-300 dark:text-gray-600 hover:text-gray-500 text-sm flex-shrink-0" title="Arrastra para reordenar"></i>
                     <div class="w-11 h-11 bg-blue-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center text-xl shadow-inner flex-shrink-0">
                         <i class="${m.icon}"></i>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <h3 class="font-bold text-gray-900 dark:text-white text-base leading-snug break-words">${escapeHtml(m.label)}</h3>
+                    <div class="min-w-0 flex-1 pr-4">
+                        <h3 class="font-bold text-gray-900 dark:text-white text-base leading-snug break-words flex items-center gap-1.5">
+                            <span>${escapeHtml(m.label)}</span>
+                            ${m.key === 'mail' ? '<i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-brand-500 flex-shrink-0" title="Se abre en una nueva pestaña"></i>' : ''}
+                        </h3>
                         <p class="text-xs text-gray-400 leading-relaxed mt-0.5 break-words">${escapeHtml(m.sub)}</p>
                     </div>
                 </div>
@@ -2898,6 +2910,10 @@
 
         function handleHomeModuleClick(key) {
             if (justDraggedHome) return;
+            if (key === 'mail') {
+                openModuleInNewTab('mail');
+                return;
+            }
             switchTab(key);
         }
 
@@ -3474,6 +3490,13 @@
 
         function goToHome() {
             activeTabKey = 'home';
+            try {
+                const cleanUrl = new URL(window.location.href);
+                if (cleanUrl.searchParams.has('tab')) {
+                    cleanUrl.searchParams.delete('tab');
+                    window.history.replaceState({}, '', cleanUrl.toString());
+                }
+            } catch (e) {}
             MODULE_CONFIG.forEach(m => {
                 const sec = document.getElementById(m.sectionId);
                 if (sec) sec.classList.add('hidden');
@@ -9015,7 +9038,12 @@ REGLAS:
         window.onload = function() {
             notesList = getNotes();
             renderHomeModules();
-            goToHome();
+            const initialTab = new URLSearchParams(window.location.search).get('tab');
+            if (initialTab && MODULE_CONFIG.some(m => m.key === initialTab)) {
+                switchTab(initialTab);
+            } else {
+                goToHome();
+            }
             startAlertSupervisor();
             startAutoBackupSupervisor();
         };
