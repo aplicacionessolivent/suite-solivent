@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramientas Documentos v33 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v34 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -4301,9 +4301,13 @@
 
                     const incluirEntregado = document.getElementById('chkIncluirEntregado') ? document.getElementById('chkIncluirEntregado').checked : true;
 
+                    const fontBold = incluirEntregado ? await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold) : null;
+                    const lastPageIndex = pages.length - 1;
+
                     for (let index = 0; index < pages.length; index++) {
                         const page = pages[index];
                         if (index === 0) {
+                            // Tapar 'PRESUPUESTO A:' en la cabecera de la primera página
                             page.drawRectangle({
                                 x: 315.0,
                                 y: 710.0,
@@ -4311,8 +4315,10 @@
                                 height: 16.0,
                                 color: PDFLib.rgb(1, 1, 1),
                             });
+                        }
 
-                            // 1. Al ser albarán, se eliminan SIEMPRE las condiciones de oferta y datos bancarios
+                        if (index === lastPageIndex) {
+                            // 1. Al ser albarán, se eliminan SIEMPRE las condiciones de oferta y datos bancarios en la ÚLTIMA página
                             // Cubre desde Y=92 hasta Y=210 para tapar también el pie bancario y la solicitud de pedido firmada
                             page.drawRectangle({
                                 x: 50.0,
@@ -4322,9 +4328,8 @@
                                 color: PDFLib.rgb(1, 1, 1),
                             });
 
-                            // 2. Si el check está activo, se estampa 'Entregado:' alineado con la línea vertical de la tabla superior (X=96.38)
-                            if (incluirEntregado) {
-                                const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+                            // 2. Si el check está activo, se estampa 'Entregado:' en la ÚLTIMA página alineado con la línea vertical de la tabla superior (X=96.38)
+                            if (incluirEntregado && fontBold) {
                                 page.drawText('Entregado:', {
                                     x: 96.38,
                                     y: 185.0,
@@ -4334,6 +4339,7 @@
                                 });
                             }
                         }
+
                         page.drawRectangle({
                             x: 483.0,
                             y: 772.2,
@@ -4353,7 +4359,9 @@
                             font: font,
                             color: PDFLib.rgb(0, 0, 0),
                         });
-                        if (index === 1) {
+
+                        if (index > 0) {
+                            // Limpiar pie 'N°Presupuesto' en todas las páginas posteriores a la primera
                             page.drawRectangle({
                                 x: 450,
                                 y: 10,
@@ -7509,10 +7517,100 @@ REGLAS:
         const DEFAULT_GMAIL_CLIENT_ID = "905848196987-si2ial3ojss3is4cb67uu9d15pj8a0go.apps.googleusercontent.com";
         const GMAIL_SCOPES = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send";
 
-        let gmailAccessToken = null;
-        let gmailTokenExpiresAt = 0;
+        let gmailAccessToken = sessionStorage.getItem('solivent_gmail_token') || null;
+        let gmailTokenExpiresAt = parseInt(sessionStorage.getItem('solivent_gmail_token_exp') || '0', 10);
         let gmailTokenClient = null;
         let pendingPostAuthAction = null;
+        let gmailSilentRefreshTimer = null;
+        let isSilentRefreshingGmail = false;
+        let silentRefreshWaiters = [];
+
+        function setGmailSessionToken(token, expiresInSec = 3500) {
+            gmailAccessToken = token;
+            gmailTokenExpiresAt = Date.now() + Math.max(300, (expiresInSec - 120)) * 1000;
+            try {
+                sessionStorage.setItem('solivent_gmail_token', gmailAccessToken);
+                sessionStorage.setItem('solivent_gmail_token_exp', String(gmailTokenExpiresAt));
+                localStorage.setItem('solivent_gmail_was_connected', '1');
+            } catch (e) {}
+            scheduleGmailSilentRefresh();
+        }
+
+        function clearGmailSessionToken(forgetAutoLogin = false) {
+            gmailAccessToken = null;
+            gmailTokenExpiresAt = 0;
+            if (gmailSilentRefreshTimer) {
+                clearTimeout(gmailSilentRefreshTimer);
+                gmailSilentRefreshTimer = null;
+            }
+            try {
+                sessionStorage.removeItem('solivent_gmail_token');
+                sessionStorage.removeItem('solivent_gmail_token_exp');
+                if (forgetAutoLogin) localStorage.removeItem('solivent_gmail_was_connected');
+            } catch (e) {}
+        }
+
+        function scheduleGmailSilentRefresh() {
+            if (gmailSilentRefreshTimer) clearTimeout(gmailSilentRefreshTimer);
+            if (!gmailAccessToken || !gmailTokenExpiresAt) return;
+            // Renovar silenciosamente ~8 minutos antes de que caduque el token (cada ~48 min)
+            const delayMs = Math.max(30 * 1000, (gmailTokenExpiresAt - Date.now()) - (6 * 60 * 1000));
+            gmailSilentRefreshTimer = setTimeout(() => {
+                silentRefreshGmailToken().catch(() => {});
+            }, delayMs);
+        }
+
+        function silentRefreshGmailToken() {
+            return new Promise((resolve, reject) => {
+                if (window.location.protocol === 'file:') {
+                    reject(new Error('FILE_PROTOCOL'));
+                    return;
+                }
+                const client = ensureGoogleTokenClient();
+                if (!client) {
+                    reject(new Error('GIS_NOT_READY'));
+                    return;
+                }
+                silentRefreshWaiters.push({ resolve, reject });
+                if (isSilentRefreshingGmail) return;
+                isSilentRefreshingGmail = true;
+
+                const safetyTimeout = setTimeout(() => {
+                    if (isSilentRefreshingGmail) {
+                        isSilentRefreshingGmail = false;
+                        const waiters = silentRefreshWaiters.splice(0);
+                        waiters.forEach(w => w.reject(new Error('SILENT_REFRESH_TIMEOUT')));
+                    }
+                }, 10000);
+
+                client._silentSafetyTimeout = safetyTimeout;
+                try {
+                    client.requestAccessToken({ prompt: '' });
+                } catch (err) {
+                    clearTimeout(safetyTimeout);
+                    isSilentRefreshingGmail = false;
+                    const waiters = silentRefreshWaiters.splice(0);
+                    waiters.forEach(w => w.reject(err));
+                }
+            });
+        }
+
+        async function ensureValidGmailToken(allowInteractiveFallback = false) {
+            if (gmailAccessToken && Date.now() < gmailTokenExpiresAt) {
+                return gmailAccessToken;
+            }
+            try {
+                await silentRefreshGmailToken();
+                if (gmailAccessToken && Date.now() < gmailTokenExpiresAt) {
+                    return gmailAccessToken;
+                }
+            } catch (e) {
+                if (allowInteractiveFallback) {
+                    connectGoogleMailOAuth(true);
+                }
+            }
+            throw new Error('AUTH_REQUIRED');
+        }
 
         let currentMailFolder = 'inbox';
         let currentMailLabelFilter = '';
@@ -7561,8 +7659,7 @@ REGLAS:
             if (gmailAccessToken && window.google && google.accounts && google.accounts.oauth2) {
                 try { google.accounts.oauth2.revoke(gmailAccessToken, () => {}); } catch (e) {}
             }
-            gmailAccessToken = null;
-            gmailTokenExpiresAt = 0;
+            clearGmailSessionToken(true);
             activeMailThreadData = null;
             currentMailThreads = [];
             closeMailConfigModal();
@@ -7596,28 +7693,54 @@ REGLAS:
                 gmailTokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: getGmailClientId(),
                     scope: GMAIL_SCOPES,
-                    hint: 'asesor@solivent.eu',
+                    hint: currentConnectedMailAddress || 'asesor@solivent.eu',
                     callback: async (tokenResponse) => {
+                        if (gmailTokenClient && gmailTokenClient._silentSafetyTimeout) {
+                            clearTimeout(gmailTokenClient._silentSafetyTimeout);
+                            gmailTokenClient._silentSafetyTimeout = null;
+                        }
+                        const wasSilent = isSilentRefreshingGmail;
+                        isSilentRefreshingGmail = false;
+
                         if (tokenResponse && tokenResponse.access_token) {
-                            gmailAccessToken = tokenResponse.access_token;
                             const expiresIn = parseInt(tokenResponse.expires_in || '3500', 10);
-                            gmailTokenExpiresAt = Date.now() + (expiresIn - 60) * 1000;
-                            updateMailConnectionUI(true);
-                            showToast('Conectado con Google Workspace');
-                            await refreshHomeMailBadge();
-                            if (activeTabKey === 'mail') {
-                                await loadMailThreads(false);
+                            setGmailSessionToken(tokenResponse.access_token, expiresIn);
+                            updateMailConnectionUI(true, currentConnectedMailAddress);
+
+                            const waiters = silentRefreshWaiters.splice(0);
+                            waiters.forEach(w => w.resolve(tokenResponse.access_token));
+
+                            if (!wasSilent) {
+                                showToast('Conectado con Google Workspace');
+                                await refreshHomeMailBadge();
+                                if (activeTabKey === 'mail') {
+                                    await loadMailThreads(false);
+                                }
                             }
                             if (typeof pendingPostAuthAction === 'function') {
                                 const fn = pendingPostAuthAction;
                                 pendingPostAuthAction = null;
                                 fn();
                             }
+                        } else {
+                            const waiters = silentRefreshWaiters.splice(0);
+                            waiters.forEach(w => w.reject(new Error('NO_TOKEN')));
                         }
                     },
                     error_callback: (err) => {
-                        console.warn('OAuth error:', err);
-                        showToast('No se completó el inicio de sesión con Google');
+                        if (gmailTokenClient && gmailTokenClient._silentSafetyTimeout) {
+                            clearTimeout(gmailTokenClient._silentSafetyTimeout);
+                            gmailTokenClient._silentSafetyTimeout = null;
+                        }
+                        const wasSilent = isSilentRefreshingGmail;
+                        isSilentRefreshingGmail = false;
+                        const waiters = silentRefreshWaiters.splice(0);
+                        waiters.forEach(w => w.reject(err || new Error('OAUTH_ERROR')));
+
+                        if (!wasSilent) {
+                            console.warn('OAuth error:', err);
+                            showToast('No se completó el inicio de sesión con Google');
+                        }
                     }
                 });
             }
@@ -7638,18 +7761,21 @@ REGLAS:
             client.requestAccessToken({ prompt: interactive ? 'select_account' : '' });
         }
 
-        async function gmailApiFetch(path, options = {}) {
-            if (!gmailAccessToken || Date.now() >= gmailTokenExpiresAt) {
-                throw new Error('AUTH_REQUIRED');
-            }
+        async function gmailApiFetch(path, options = {}, isRetry = false) {
+            await ensureValidGmailToken(false);
             const url = `https://gmail.googleapis.com/gmail/v1/users/me${path}`;
             const headers = Object.assign({}, options.headers || {}, {
                 'Authorization': `Bearer ${gmailAccessToken}`
             });
             const res = await fetch(url, { ...options, headers });
             if (res.status === 401) {
-                gmailAccessToken = null;
-                gmailTokenExpiresAt = 0;
+                clearGmailSessionToken(false);
+                if (!isRetry) {
+                    try {
+                        await silentRefreshGmailToken();
+                        return await gmailApiFetch(path, options, true);
+                    } catch (e) {}
+                }
                 updateMailConnectionUI(false);
                 throw new Error('AUTH_REQUIRED');
             }
@@ -7835,16 +7961,28 @@ REGLAS:
             loadMailThreads(false);
         }
 
-        function initMailSection() {
+        async function initMailSection() {
             refreshContactsEmailDatalist();
             if (gmailAccessToken && Date.now() < gmailTokenExpiresAt) {
-                updateMailConnectionUI(true);
+                scheduleGmailSilentRefresh();
+                updateMailConnectionUI(true, currentConnectedMailAddress);
                 refreshHomeMailBadge();
                 loadMailThreads(false);
-            } else {
-                updateMailConnectionUI(false);
-                document.getElementById('mailThreadsList').innerHTML = '<div class="p-8 text-center text-xs text-gray-400">Pulsa <strong>Iniciar Sesión con Google</strong> arriba para ver tus correos de asesor@solivent.eu en tiempo real.</div>';
+                return;
             }
+            // Si el usuario ya había iniciado sesión anteriormente, intentar reconexión silenciosa automática
+            if (localStorage.getItem('solivent_gmail_was_connected') === '1' && window.location.protocol !== 'file:') {
+                document.getElementById('mailThreadsList').innerHTML = '<div class="p-8 text-center text-xs text-gray-400"><i class="fa-solid fa-spinner fa-spin text-brand-600 mr-1.5"></i> Reconectando automáticamente con Google Workspace...</div>';
+                try {
+                    await silentRefreshGmailToken();
+                    updateMailConnectionUI(true, currentConnectedMailAddress);
+                    refreshHomeMailBadge();
+                    loadMailThreads(false);
+                    return;
+                } catch (e) {}
+            }
+            updateMailConnectionUI(false);
+            document.getElementById('mailThreadsList').innerHTML = '<div class="p-8 text-center text-xs text-gray-400">Pulsa <strong>Iniciar Sesión con Google</strong> arriba para ver tus correos de asesor@solivent.eu en tiempo real.</div>';
         }
 
         const MAIL_FOLDERS_META = {
@@ -11967,6 +12105,33 @@ ${JSON.stringify(catalog)}`;
             e.target.value = '';
         }
 
-    </script>
+    
+        // Reconexión silenciosa automática al volver a la pestaña tras inactividad o al cargar la suite
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && localStorage.getItem('solivent_gmail_was_connected') === '1') {
+                if (!gmailAccessToken || Date.now() >= (gmailTokenExpiresAt - 5 * 60 * 1000)) {
+                    silentRefreshGmailToken().then(() => {
+                        updateMailConnectionUI(true, currentConnectedMailAddress);
+                        refreshHomeMailBadge();
+                    }).catch(() => {});
+                }
+            }
+        });
+
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('solivent_gmail_was_connected') === '1' && window.location.protocol !== 'file:') {
+                setTimeout(() => {
+                    if (gmailAccessToken && Date.now() < gmailTokenExpiresAt) {
+                        scheduleGmailSilentRefresh();
+                        refreshHomeMailBadge();
+                    } else {
+                        silentRefreshGmailToken().then(() => {
+                            refreshHomeMailBadge();
+                        }).catch(() => {});
+                    }
+                }, 1200);
+            }
+        });
+</script>
 </body>
 </html>
