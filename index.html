@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v39 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v40 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -719,7 +719,7 @@
         <!-- SECCIÓN 3: PDF (UNIFICADO) -->
         <div id="sectionMerge" class="hidden space-y-6">
             <!-- Selector de Sub-herramientas PDF -->
-            <div class="bg-white dark:bg-gray-800 p-2 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-2 overflow-x-auto">
+            <div class="bg-white dark:bg-gray-800 p-2 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-wrap items-center gap-2">
                 <button type="button" onclick="switchPdfSubTool('merge')" id="subToolBtn_merge" class="pdf-subtool-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-sm whitespace-nowrap">
                     <i class="fa-solid fa-object-group"></i> <span>1. Unir</span>
                 </button>
@@ -1401,7 +1401,7 @@
         <!-- SECCIÓN 7: REPARACIONES DE ARBORSYSTEMS -->
         <div id="sectionArbor" class="hidden space-y-6">
             <div class="bg-white dark:bg-gray-800 p-2.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2 overflow-x-auto">
+                <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="switchArborSubTool('arbor')" id="arborSubBtn_arbor" class="arbor-subtool-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-sm whitespace-nowrap">
                         <i class="fa-solid fa-syringe"></i> <span>1. Reparaciones de ArborSystems</span>
                     </button>
@@ -1487,7 +1487,7 @@
         <!-- SECCIÓN 8: MAQUINARIA E INVENTARIO DE VEHÍCULOS -->
         <div id="sectionMaquinaria" class="hidden space-y-6">
             <div class="bg-white dark:bg-gray-800 p-2.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2 overflow-x-auto">
+                <div class="flex flex-wrap items-center gap-2">
                     <button type="button" onclick="switchMaqSubTool('maq')" id="maqSubBtn_maq" class="maq-subtool-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-sm whitespace-nowrap">
                         <i class="fa-solid fa-tractor"></i> <span>1. Incidencias de Maquinaria</span>
                     </button>
@@ -1632,7 +1632,7 @@
                         </button>
                     </div>
                     <button type="button" onclick="loadMailThreads(true)" id="btnRefreshMail" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl transition border border-gray-200 dark:border-gray-600 flex items-center gap-1.5" title="Actualizar bandeja en tiempo real">
-                        <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Actualizar</span>
+                        <i class="fa-solid fa-rotate-right"></i> <span>Actualizar</span>
                     </button>
                 </div>
 
@@ -2887,7 +2887,7 @@
                      class="home-module-card group relative p-5 h-full bg-white dark:bg-gray-800 hover:border-brand-500 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing flex items-center gap-3.5 select-none">
                     ${m.key === 'notes' ? '<span id="homeAlertsBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-red-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
                     ${m.key === 'mail' ? '<span id="homeMailUnreadBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-brand-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
-                    <button type="button" onclick="event.stopPropagation(); openModuleInNewTab('${m.key}')" class="${m.key === 'mail' ? 'hidden' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'} absolute bottom-2.5 right-2.5 p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Abrir este módulo en una pestaña nueva">
+                    <button type="button" onclick="event.stopPropagation(); openModuleInNewTab('${m.key}')" class="${m.key === 'mail' ? 'hidden' : 'opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'} absolute bottom-2.5 right-2.5 p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Abrir este módulo en una pestaña nueva">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                     </button>
                     <i class="fa-solid fa-grip-vertical text-gray-300 dark:text-gray-600 hover:text-gray-500 text-sm flex-shrink-0" title="Arrastra para reordenar"></i>
@@ -8464,6 +8464,9 @@ REGLAS:
 
             emptyState.classList.add('hidden');
             viewer.classList.remove('hidden');
+            if (window.innerWidth < 1024) {
+                viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             msgContainer.innerHTML = '<div class="p-8 text-center text-xs text-gray-400"><i class="fa-solid fa-spinner fa-spin text-brand-600 mr-1.5"></i> Cargando conversación...</div>';
 
             try {
