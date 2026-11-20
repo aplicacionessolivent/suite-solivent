@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramientas Documentos v34 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v35 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -4302,7 +4302,9 @@
                     const incluirEntregado = document.getElementById('chkIncluirEntregado') ? document.getElementById('chkIncluirEntregado').checked : true;
 
                     const fontBold = incluirEntregado ? await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold) : null;
-                    const lastPageIndex = pages.length - 1;
+                    // Si el presupuesto tiene más de 1 página, la última página contiene la cláusula RGPD/Protección de Datos
+                    // y el bloque de totales/condiciones bancarias/firma está en la penúltima página (pages.length - 2).
+                    const summaryPageIndex = pages.length > 1 ? pages.length - 2 : 0;
 
                     for (let index = 0; index < pages.length; index++) {
                         const page = pages[index];
@@ -4317,8 +4319,8 @@
                             });
                         }
 
-                        if (index === lastPageIndex) {
-                            // 1. Al ser albarán, se eliminan SIEMPRE las condiciones de oferta y datos bancarios en la ÚLTIMA página
+                        if (index === summaryPageIndex) {
+                            // 1. Al ser albarán, se eliminan SIEMPRE las condiciones de oferta y datos bancarios en la página de totales (penúltima si hay cláusula RGPD final, o primera si es de 1 página)
                             // Cubre desde Y=92 hasta Y=210 para tapar también el pie bancario y la solicitud de pedido firmada
                             page.drawRectangle({
                                 x: 50.0,
@@ -4328,7 +4330,7 @@
                                 color: PDFLib.rgb(1, 1, 1),
                             });
 
-                            // 2. Si el check está activo, se estampa 'Entregado:' en la ÚLTIMA página alineado con la línea vertical de la tabla superior (X=96.38)
+                            // 2. Si el check está activo, se estampa 'Entregado:' en esa misma página alineado con la línea vertical de la tabla superior (X=96.38)
                             if (incluirEntregado && fontBold) {
                                 page.drawText('Entregado:', {
                                     x: 96.38,
