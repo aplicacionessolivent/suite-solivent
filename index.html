@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v38 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v39 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -7709,8 +7709,18 @@ REGLAS:
         const DEFAULT_GMAIL_CLIENT_ID = "905848196987-si2ial3ojss3is4cb67uu9d15pj8a0go.apps.googleusercontent.com";
         const GMAIL_SCOPES = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send";
 
-        let gmailAccessToken = sessionStorage.getItem('solivent_gmail_token') || null;
-        let gmailTokenExpiresAt = parseInt(sessionStorage.getItem('solivent_gmail_token_exp') || '0', 10);
+        function loadStoredGmailToken() {
+            const tok = localStorage.getItem('solivent_gmail_token') || sessionStorage.getItem('solivent_gmail_token') || null;
+            const exp = parseInt(localStorage.getItem('solivent_gmail_token_exp') || sessionStorage.getItem('solivent_gmail_token_exp') || '0', 10);
+            if (tok && exp && Date.now() < exp) {
+                return { token: tok, expiresAt: exp };
+            }
+            return { token: null, expiresAt: 0 };
+        }
+
+        const _initialStoredGmail = loadStoredGmailToken();
+        let gmailAccessToken = _initialStoredGmail.token;
+        let gmailTokenExpiresAt = _initialStoredGmail.expiresAt;
         let gmailTokenClient = null;
         let pendingPostAuthAction = null;
         let gmailSilentRefreshTimer = null;
@@ -7721,9 +7731,12 @@ REGLAS:
             gmailAccessToken = token;
             gmailTokenExpiresAt = Date.now() + Math.max(300, (expiresInSec - 120)) * 1000;
             try {
-                sessionStorage.setItem('solivent_gmail_token', gmailAccessToken);
-                sessionStorage.setItem('solivent_gmail_token_exp', String(gmailTokenExpiresAt));
+                localStorage.setItem('solivent_gmail_token', gmailAccessToken);
+                localStorage.setItem('solivent_gmail_token_exp', String(gmailTokenExpiresAt));
                 localStorage.setItem('solivent_gmail_was_connected', '1');
+                // Limpiar claves antiguas de sessionStorage si quedaran
+                sessionStorage.removeItem('solivent_gmail_token');
+                sessionStorage.removeItem('solivent_gmail_token_exp');
             } catch (e) {}
             scheduleGmailSilentRefresh();
         }
@@ -7736,6 +7749,8 @@ REGLAS:
                 gmailSilentRefreshTimer = null;
             }
             try {
+                localStorage.removeItem('solivent_gmail_token');
+                localStorage.removeItem('solivent_gmail_token_exp');
                 sessionStorage.removeItem('solivent_gmail_token');
                 sessionStorage.removeItem('solivent_gmail_token_exp');
                 if (forgetAutoLogin) localStorage.removeItem('solivent_gmail_was_connected');
@@ -7745,22 +7760,51 @@ REGLAS:
         function scheduleGmailSilentRefresh() {
             if (gmailSilentRefreshTimer) clearTimeout(gmailSilentRefreshTimer);
             if (!gmailAccessToken || !gmailTokenExpiresAt) return;
-            // Renovar silenciosamente ~8 minutos antes de que caduque el token (cada ~48 min)
+            // Renovar silenciosamente ~6 minutos antes de que caduque el token
             const delayMs = Math.max(30 * 1000, (gmailTokenExpiresAt - Date.now()) - (6 * 60 * 1000));
             gmailSilentRefreshTimer = setTimeout(() => {
                 silentRefreshGmailToken().catch(() => {});
             }, delayMs);
         }
 
-        function silentRefreshGmailToken() {
+        function waitForGoogleGisReady(maxWaitMs = 8000) {
             return new Promise((resolve, reject) => {
+                const start = Date.now();
+                const check = () => {
+                    const client = ensureGoogleTokenClient();
+                    if (client) {
+                        resolve(client);
+                    } else if (Date.now() - start >= maxWaitMs) {
+                        reject(new Error('GIS_NOT_READY'));
+                    } else {
+                        setTimeout(check, 200);
+                    }
+                };
+                check();
+            });
+        }
+
+        function silentRefreshGmailToken() {
+            return new Promise(async (resolve, reject) => {
                 if (window.location.protocol === 'file:') {
                     reject(new Error('FILE_PROTOCOL'));
                     return;
                 }
-                const client = ensureGoogleTokenClient();
-                if (!client) {
-                    reject(new Error('GIS_NOT_READY'));
+                // Comprobar primero si otra pestaña ya renovó el token en localStorage
+                const shared = loadStoredGmailToken();
+                if (shared.token && Date.now() < shared.expiresAt) {
+                    gmailAccessToken = shared.token;
+                    gmailTokenExpiresAt = shared.expiresAt;
+                    scheduleGmailSilentRefresh();
+                    resolve(gmailAccessToken);
+                    return;
+                }
+
+                let client = null;
+                try {
+                    client = await waitForGoogleGisReady(8000);
+                } catch (e) {
+                    reject(e);
                     return;
                 }
                 silentRefreshWaiters.push({ resolve, reject });
@@ -8155,6 +8199,11 @@ REGLAS:
 
         async function initMailSection() {
             refreshContactsEmailDatalist();
+            const shared = loadStoredGmailToken();
+            if (shared.token && Date.now() < shared.expiresAt) {
+                gmailAccessToken = shared.token;
+                gmailTokenExpiresAt = shared.expiresAt;
+            }
             if (gmailAccessToken && Date.now() < gmailTokenExpiresAt) {
                 scheduleGmailSilentRefresh();
                 updateMailConnectionUI(true, currentConnectedMailAddress);
@@ -12308,6 +12357,27 @@ ${JSON.stringify(catalog)}`;
         }
 
     
+        // Sincronizar sesión de correo entre pestañas abiertas en tiempo real
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'solivent_gmail_token' || e.key === 'solivent_gmail_token_exp') {
+                const shared = loadStoredGmailToken();
+                if (shared.token && Date.now() < shared.expiresAt) {
+                    gmailAccessToken = shared.token;
+                    gmailTokenExpiresAt = shared.expiresAt;
+                    scheduleGmailSilentRefresh();
+                    updateMailConnectionUI(true, currentConnectedMailAddress);
+                    refreshHomeMailBadge();
+                    if (activeTabKey === 'mail' && currentMailThreads.length === 0) {
+                        loadMailThreads(false);
+                    }
+                } else {
+                    gmailAccessToken = null;
+                    gmailTokenExpiresAt = 0;
+                    updateMailConnectionUI(false);
+                }
+            }
+        });
+
         // Reconexión silenciosa automática al volver a la pestaña tras inactividad o al cargar la suite
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && localStorage.getItem('solivent_gmail_was_connected') === '1') {
