@@ -6733,8 +6733,7 @@ REGLAS:
         }
 
         function wrapPdfTextLines(text, font, fontSize, maxWidthPt) {
-            const paragraphs = String(text || '').split(/?
-/);
+            const paragraphs = String(text || '').split(String.fromCharCode(10));
             const wrapped = [];
             paragraphs.forEach(para => {
                 if (!para.trim()) {
