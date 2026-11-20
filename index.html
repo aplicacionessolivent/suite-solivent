@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v40 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v41 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2678,7 +2678,7 @@
 
     <!-- Modal Redactar / Responder Correo Corporativo -->
     <div id="mailComposeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 border border-gray-200 dark:border-gray-700 max-h-[92vh] overflow-y-auto">
+        <div id="mailComposeDialog" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 border-2 border-gray-200 dark:border-gray-700 max-h-[92vh] overflow-y-auto transition-all">
             <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center font-bold text-lg">
@@ -2728,11 +2728,12 @@
                     <textarea id="mailComposeBody" rows="8" required placeholder="Escribe aquí tu correo..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
                 </div>
 
-                <!-- Adjuntos -->
-                <div class="bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border border-gray-200 dark:border-gray-600 space-y-2">
-                    <div class="flex items-center justify-between">
+                <!-- Adjuntos (con soporte Drag & Drop directo) -->
+                <div id="mailComposeDropZone" class="bg-gray-50 dark:bg-gray-700/40 p-3 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-brand-500 transition-all space-y-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
                         <span class="font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                            <i class="fa-solid fa-paperclip text-brand-600"></i> Archivos adjuntos:
+                            <i class="fa-solid fa-paperclip text-brand-600"></i>
+                            <span>Archivos adjuntos <span class="font-normal text-[11px] text-gray-400">(arrastra archivos aquí o a cualquier parte del correo)</span>:</span>
                         </span>
                         <label class="px-3 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-bold cursor-pointer transition flex items-center gap-1">
                             <i class="fa-solid fa-plus text-brand-600"></i> Adjuntar archivo
@@ -8986,8 +8987,9 @@ REGLAS:
             return headers.join('\r\n') + '\r\n\r\n' + bodyParts.join('\r\n');
         }
 
-        async function handleMailComposeFilesSelected(e) {
-            const files = Array.from(e.target.files || []);
+        async function addFilesToMailCompose(rawFiles) {
+            const files = Array.from(rawFiles || []).filter(f => f && f.size >= 0);
+            if (files.length === 0) return;
             for (const f of files) {
                 const buf = await f.arrayBuffer();
                 mailComposeAttachments.push({
@@ -8997,8 +8999,83 @@ REGLAS:
                 });
             }
             renderMailComposeAttachments();
+            showToast(files.length === 1 ? `Archivo adjuntado: ${files[0].name}` : `${files.length} archivos adjuntados`);
+        }
+
+        async function handleMailComposeFilesSelected(e) {
+            await addFilesToMailCompose(e.target.files);
             e.target.value = '';
         }
+
+        (function initMailComposeDragAndDrop() {
+            const dialog = document.getElementById('mailComposeDialog');
+            const dropZone = document.getElementById('mailComposeDropZone');
+            if (!dialog) return;
+
+            let dragCounter = 0;
+
+            const setHighlight = (active) => {
+                if (active) {
+                    dialog.classList.add('border-brand-500', 'ring-4', 'ring-brand-500/20');
+                    if (dropZone) dropZone.classList.add('drag-over');
+                } else {
+                    dialog.classList.remove('border-brand-500', 'ring-4', 'ring-brand-500/20');
+                    if (dropZone) dropZone.classList.remove('drag-over');
+                }
+            };
+
+            dialog.addEventListener('dragenter', (e) => {
+                if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter++;
+                e.dataTransfer.dropEffect = 'copy';
+                setHighlight(true);
+            });
+
+            dialog.addEventListener('dragover', (e) => {
+                if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                e.dataTransfer.dropEffect = 'copy';
+                setHighlight(true);
+            });
+
+            dialog.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter--;
+                if (dragCounter <= 0) {
+                    dragCounter = 0;
+                    setHighlight(false);
+                }
+            });
+
+            dialog.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dragCounter = 0;
+                setHighlight(false);
+
+                let dropped = [];
+                if (e.dataTransfer) {
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        dropped = Array.from(e.dataTransfer.files);
+                    } else if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+                        for (let i = 0; i < e.dataTransfer.items.length; i++) {
+                            const item = e.dataTransfer.items[i];
+                            if (item.kind === 'file') {
+                                const f = item.getAsFile();
+                                if (f) dropped.push(f);
+                            }
+                        }
+                    }
+                }
+                if (dropped.length > 0) {
+                    await addFilesToMailCompose(dropped);
+                }
+            });
+        })();
 
         async function submitSuiteMailCompose(e) {
             e.preventDefault();
