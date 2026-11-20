@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v41 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v42 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -732,6 +732,9 @@
                 <button type="button" onclick="switchPdfSubTool('split')" id="subToolBtn_split" class="pdf-subtool-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 whitespace-nowrap">
                     <i class="fa-solid fa-scissors"></i> <span>4. Dividir / Extraer</span>
                 </button>
+                <button type="button" onclick="switchPdfSubTool('edit')" id="subToolBtn_edit" class="pdf-subtool-btn px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 whitespace-nowrap">
+                    <i class="fa-solid fa-pen-to-square"></i> <span>5. Editar PDF</span>
+                </button>
             </div>
 
             <!-- SUB-HERRAMIENTA 1: UNIR PDFS (ORIGINAL Y PROBADO) -->
@@ -1096,6 +1099,140 @@
                             <button type="button" id="btnSplitAllPages" onclick="executeSplitAllPages()" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center justify-center gap-1.5">
                                 <i class="fa-solid fa-file-zipper"></i> Separar Todas las Páginas (.ZIP)
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-HERRAMIENTA 5: EDITOR VISUAL DE PDF -->
+            <div id="subView_edit" class="hidden space-y-4">
+                <input type="file" id="editPdfFileInput" accept=".pdf,application/pdf" class="hidden">
+                <input type="file" id="editPdfImageInput" accept="image/png,image/jpeg,image/webp" class="hidden">
+
+                <div id="editPdfDropZone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 md:p-12 text-center bg-white dark:bg-gray-800 cursor-pointer hover:border-brand-500 transition-all shadow-sm">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="w-16 h-16 bg-blue-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400 rounded-full flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </div>
+                        <div class="text-lg font-medium text-gray-700 dark:text-gray-200">
+                            Arrastra aquí el PDF que quieras editar
+                        </div>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">Añade texto, tapa datos erróneos, inserta firmas/sellos, resalta o rota/elimina páginas 100% en local</p>
+                        <button type="button" onclick="event.stopPropagation(); document.getElementById('editPdfFileInput').click()" class="mt-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition shadow">
+                            Seleccionar PDF a Editar
+                        </button>
+                    </div>
+                </div>
+
+                <div id="editPdfWorkspace" class="hidden space-y-4">
+                    <!-- Barra superior de documento y acciones finales -->
+                    <div class="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <i class="fa-solid fa-file-pdf text-red-500 text-xl"></i>
+                            <div class="min-w-0">
+                                <div id="editPdfFileName" class="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate max-w-xs sm:max-w-md">documento.pdf</div>
+                                <div id="editPdfPageInfo" class="text-[11px] text-gray-400">Página 1 de 1</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" onclick="document.getElementById('editPdfFileInput').click()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg transition">
+                                <i class="fa-solid fa-arrows-rotate mr-1"></i> Cambiar PDF
+                            </button>
+                            <button type="button" onclick="clearEditPdfWorkspace()" class="px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg font-semibold transition">
+                                <i class="fa-solid fa-trash mr-1"></i> Vaciar
+                            </button>
+                            <button type="button" id="btnSaveEditedPdf" onclick="exportEditedPdfDocument()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5">
+                                <i class="fa-solid fa-download"></i> <span>Descargar PDF Editado</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de herramientas de edición -->
+                    <div class="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <button type="button" onclick="setPdfEditorTool('select')" id="edTool_select" class="ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white flex items-center gap-1.5" title="Seleccionar, mover o editar elementos">
+                                <i class="fa-solid fa-arrow-pointer"></i> <span>Mover / Editar</span>
+                            </button>
+                            <button type="button" onclick="setPdfEditorTool('text')" id="edTool_text" class="ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 flex items-center gap-1.5" title="Haz clic en la página para escribir texto">
+                                <i class="fa-solid fa-font"></i> <span>Texto</span>
+                            </button>
+                            <button type="button" onclick="setPdfEditorTool('whiteout')" id="edTool_whiteout" class="ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 flex items-center gap-1.5" title="Arrastra sobre una zona para taparla con un parche opaco">
+                                <i class="fa-solid fa-eraser"></i> <span>Tapar / Parche</span>
+                            </button>
+                            <button type="button" onclick="setPdfEditorTool('highlight')" id="edTool_highlight" class="ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 flex items-center gap-1.5" title="Arrastra para subrayar o resaltar">
+                                <i class="fa-solid fa-highlighter text-amber-500"></i> <span>Resaltar</span>
+                            </button>
+                            <button type="button" onclick="setPdfEditorTool('box')" id="edTool_box" class="ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 flex items-center gap-1.5" title="Arrastra para dibujar un recuadro">
+                                <i class="fa-regular fa-square"></i> <span>Recuadro</span>
+                            </button>
+                            <button type="button" onclick="document.getElementById('editPdfImageInput').click()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 hover:bg-purple-100 flex items-center gap-1.5" title="Insertar firma o sello (PNG/JPG)">
+                                <i class="fa-solid fa-signature"></i> <span>Firma / Sello</span>
+                            </button>
+                        </div>
+
+                        <!-- Propiedades rápidas (Color, Tamaño, Negrita, Borrar selección) -->
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <label class="flex items-center gap-1 text-gray-600 dark:text-gray-300 font-semibold" title="Color">
+                                <span>Color:</span>
+                                <input type="color" id="edPropColor" value="#000000" onchange="updateSelectedEdItemProp('color', this.value)" class="w-7 h-7 rounded cursor-pointer border border-gray-300 bg-transparent">
+                            </label>
+                            <label class="flex items-center gap-1 text-gray-600 dark:text-gray-300 font-semibold" title="Color de fondo del parche">
+                                <span>Fondo parche:</span>
+                                <input type="color" id="edPropFillColor" value="#ffffff" onchange="updateSelectedEdItemProp('fillColor', this.value)" class="w-7 h-7 rounded cursor-pointer border border-gray-300 bg-transparent">
+                            </label>
+                            <select id="edPropFontSize" onchange="updateSelectedEdItemProp('fontSize', parseInt(this.value,10))" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs">
+                                <option value="8">8 pt</option>
+                                <option value="9">9 pt</option>
+                                <option value="10">10 pt</option>
+                                <option value="11" selected>11 pt</option>
+                                <option value="12">12 pt</option>
+                                <option value="14">14 pt</option>
+                                <option value="16">16 pt</option>
+                                <option value="20">20 pt</option>
+                                <option value="24">24 pt</option>
+                            </select>
+                            <button type="button" id="edPropBoldBtn" onclick="toggleSelectedEdItemBold()" class="px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 font-black text-xs" title="Negrita">B</button>
+                            <button type="button" id="edDeleteSelectedBtn" onclick="deleteSelectedEdItem()" class="hidden px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-xs flex items-center gap-1" title="Eliminar elemento seleccionado (Supr)">
+                                <i class="fa-solid fa-trash-can"></i> Borrar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Editor de texto contextual cuando hay un bloque de texto seleccionado -->
+                    <div id="edTextEditBar" class="hidden bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-2.5 rounded-xl flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-blue-900 dark:text-blue-200"><i class="fa-solid fa-i-cursor mr-1"></i>Texto seleccionado:</span>
+                        <input type="text" id="edSelectedTextInput" oninput="updateSelectedEdItemProp('text', this.value)" placeholder="Escribe aquí el texto..." class="flex-1 min-w-[200px] px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none">
+                    </div>
+
+                    <!-- Barra de navegación de páginas y Zoom -->
+                    <div class="bg-gray-100 dark:bg-gray-700/50 px-3 py-2 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="changeEditPdfPage(-1)" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-bold hover:bg-gray-50"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+                            <span id="editPdfPageCounterBadge" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-bold">1 / 1</span>
+                            <button type="button" onclick="changeEditPdfPage(1)" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-bold hover:bg-gray-50">Siguiente <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="rotateCurrentEditPdfPage()" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold hover:bg-gray-50 flex items-center gap-1" title="Rotar esta página 90°">
+                                <i class="fa-solid fa-rotate-right text-brand-600"></i> Rotar 90°
+                            </button>
+                            <button type="button" onclick="deleteCurrentEditPdfPage()" class="px-2.5 py-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 text-red-600 rounded-lg font-semibold hover:bg-red-50 flex items-center gap-1" title="Eliminar esta página del PDF">
+                                <i class="fa-solid fa-file-circle-minus"></i> Eliminar pág.
+                            </button>
+                            <select id="editPdfZoomSelect" onchange="renderCurrentEditPdfPage()" class="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-bold">
+                                <option value="0.9">Zoom 75%</option>
+                                <option value="1.25" selected>Zoom 100%</option>
+                                <option value="1.6">Zoom 130%</option>
+                                <option value="2.0">Zoom 160%</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Lienzo interactivo del PDF -->
+                    <div class="bg-gray-200/80 dark:bg-gray-900/80 p-4 rounded-2xl border border-gray-300 dark:border-gray-700 overflow-auto max-h-[680px] flex justify-center">
+                        <div id="editPdfStage" class="relative bg-white shadow-2xl select-none" style="width: 595px; height: 842px;">
+                            <canvas id="editPdfBaseCanvas" class="block pointer-events-none"></canvas>
+                            <div id="editPdfOverlayLayer" class="absolute inset-0 overflow-hidden"></div>
                         </div>
                     </div>
                 </div>
@@ -4721,7 +4858,7 @@
 
         // --- LÓGICA MÓDULO PDF (UNIR, OPTIMIZAR, EXPORTAR) ---
         function switchPdfSubTool(toolKey) {
-            const keys = ['merge', 'compress', 'export', 'split'];
+            const keys = ['merge', 'compress', 'export', 'split', 'edit'];
             keys.forEach(k => {
                 const btn = document.getElementById(`subToolBtn_${k}`);
                 const view = document.getElementById(`subView_${k}`);
@@ -6107,6 +6244,522 @@ REGLAS:
             document.getElementById('splitOptionsCard').classList.remove('hidden');
             showToast('PDF cargado para dividir o extraer');
         }
+
+
+        // =========================================================================
+        // 5. EDITOR VISUAL DE PDF (TEXTO, PARCHES, FIRMAS, RESALTADO Y PÁGINAS)
+        // =========================================================================
+        let editPdfState = {
+            fileName: '',
+            rawBytes: null,
+            pdfJsDoc: null,
+            pages: [], // [{ origPageIndex, rotation, items: [...] }]
+            currentPageIdx: 0,
+            tool: 'select',
+            selectedItemId: null,
+            boldDefault: false,
+            viewportScale: 1.25,
+            baseWidthPt: 595,
+            baseHeightPt: 842
+        };
+
+        setupToolDropZone('editPdfDropZone', 'editPdfFileInput', handleEditPdfFileSelected);
+
+        async function handleEditPdfFileSelected(file) {
+            if (!file) return;
+            try {
+                const buf = await file.arrayBuffer();
+                const bytes = new Uint8Array(buf);
+                const pdfJsDoc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+                const pages = [];
+                for (let i = 0; i < pdfJsDoc.numPages; i++) {
+                    pages.push({ origPageIndex: i, rotation: 0, items: [] });
+                }
+                editPdfState = {
+                    fileName: file.name,
+                    rawBytes: bytes,
+                    pdfJsDoc,
+                    pages,
+                    currentPageIdx: 0,
+                    tool: 'select',
+                    selectedItemId: null,
+                    boldDefault: false,
+                    viewportScale: parseFloat(document.getElementById('editPdfZoomSelect')?.value || '1.25') || 1.25,
+                    baseWidthPt: 595,
+                    baseHeightPt: 842
+                };
+                document.getElementById('editPdfFileName').innerText = file.name;
+                document.getElementById('editPdfDropZone').classList.add('hidden');
+                document.getElementById('editPdfWorkspace').classList.remove('hidden');
+                setPdfEditorTool('select');
+                await renderCurrentEditPdfPage();
+                showToast('PDF cargado en el editor visual');
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo abrir el PDF en el editor');
+            }
+        }
+
+        function clearEditPdfWorkspace() {
+            editPdfState.rawBytes = null;
+            editPdfState.pdfJsDoc = null;
+            editPdfState.pages = [];
+            editPdfState.selectedItemId = null;
+            document.getElementById('editPdfFileInput').value = '';
+            document.getElementById('editPdfWorkspace').classList.add('hidden');
+            document.getElementById('editPdfDropZone').classList.remove('hidden');
+            showToast('Editor PDF vaciado');
+        }
+
+        function setPdfEditorTool(tool) {
+            editPdfState.tool = tool;
+            document.querySelectorAll('.ed-tool-btn').forEach(btn => {
+                btn.className = 'ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 flex items-center gap-1.5';
+            });
+            const activeBtn = document.getElementById('edTool_' + tool);
+            if (activeBtn) {
+                activeBtn.className = 'ed-tool-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-600 text-white flex items-center gap-1.5 shadow-xs';
+            }
+            const overlay = document.getElementById('editPdfOverlayLayer');
+            if (overlay) {
+                overlay.style.cursor = tool === 'text' ? 'text' : (tool === 'select' ? 'default' : 'crosshair');
+            }
+        }
+
+        function changeEditPdfPage(delta) {
+            if (!editPdfState.pages.length) return;
+            const next = editPdfState.currentPageIdx + delta;
+            if (next >= 0 && next < editPdfState.pages.length) {
+                editPdfState.currentPageIdx = next;
+                editPdfState.selectedItemId = null;
+                renderCurrentEditPdfPage();
+            }
+        }
+
+        function rotateCurrentEditPdfPage() {
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            if (!pg) return;
+            pg.rotation = (pg.rotation + 90) % 360;
+            renderCurrentEditPdfPage();
+            showToast('Página rotada 90°');
+        }
+
+        function deleteCurrentEditPdfPage() {
+            if (editPdfState.pages.length <= 1) {
+                showToast('El documento debe tener al menos 1 página');
+                return;
+            }
+            if (!confirm('¿Eliminar esta página del documento PDF?')) return;
+            editPdfState.pages.splice(editPdfState.currentPageIdx, 1);
+            if (editPdfState.currentPageIdx >= editPdfState.pages.length) {
+                editPdfState.currentPageIdx = editPdfState.pages.length - 1;
+            }
+            editPdfState.selectedItemId = null;
+            renderCurrentEditPdfPage();
+            showToast('Página eliminada');
+        }
+
+        async function renderCurrentEditPdfPage() {
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            if (!pg || !editPdfState.pdfJsDoc) return;
+
+            const scale = parseFloat(document.getElementById('editPdfZoomSelect')?.value || '1.25') || 1.25;
+            editPdfState.viewportScale = scale;
+
+            const pdfPage = await editPdfState.pdfJsDoc.getPage(pg.origPageIndex + 1);
+            const totalRot = ((pdfPage.rotate || 0) + pg.rotation) % 360;
+            const baseVp = pdfPage.getViewport({ scale: 1.0, rotation: totalRot });
+            editPdfState.baseWidthPt = baseVp.width;
+            editPdfState.baseHeightPt = baseVp.height;
+
+            const vp = pdfPage.getViewport({ scale, rotation: totalRot });
+            const canvas = document.getElementById('editPdfBaseCanvas');
+            const stage = document.getElementById('editPdfStage');
+            canvas.width = vp.width;
+            canvas.height = vp.height;
+            stage.style.width = vp.width + 'px';
+            stage.style.height = vp.height + 'px';
+
+            await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+            document.getElementById('editPdfPageInfo').innerText = 'Página ' + (editPdfState.currentPageIdx + 1) + ' de ' + editPdfState.pages.length;
+            document.getElementById('editPdfPageCounterBadge').innerText = (editPdfState.currentPageIdx + 1) + ' / ' + editPdfState.pages.length;
+
+            renderEditPdfOverlayItems();
+        }
+
+        function renderEditPdfOverlayItems() {
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            const overlay = document.getElementById('editPdfOverlayLayer');
+            if (!pg || !overlay) return;
+            const s = editPdfState.viewportScale;
+            overlay.innerHTML = '';
+
+            pg.items.forEach(item => {
+                const isSel = item.id === editPdfState.selectedItemId;
+                const el = document.createElement('div');
+                el.dataset.itemId = item.id;
+                el.style.position = 'absolute';
+                el.style.left = (item.x * s) + 'px';
+                el.style.top = (item.y * s) + 'px';
+                el.style.cursor = 'move';
+                el.style.boxSizing = 'border-box';
+                if (isSel) {
+                    el.style.outline = '2px dashed #2563eb';
+                    el.style.outlineOffset = '2px';
+                }
+
+                if (item.type === 'text') {
+                    el.style.fontFamily = 'Helvetica, Arial, sans-serif';
+                    el.style.fontSize = (item.fontSize * s) + 'px';
+                    el.style.fontWeight = item.bold ? 'bold' : 'normal';
+                    el.style.color = item.color || '#000000';
+                    el.style.whiteSpace = 'pre';
+                    el.style.lineHeight = '1.15';
+                    el.style.padding = '1px 3px';
+                    el.innerText = item.text || 'Texto';
+                    el.addEventListener('dblclick', (ev) => {
+                        ev.stopPropagation();
+                        const inp = document.getElementById('edSelectedTextInput');
+                        if (inp) { inp.focus(); inp.select(); }
+                    });
+                } else if (item.type === 'whiteout') {
+                    el.style.width = (item.w * s) + 'px';
+                    el.style.height = (item.h * s) + 'px';
+                    el.style.backgroundColor = item.fillColor || '#ffffff';
+                    el.style.border = isSel ? '1px solid #2563eb' : '1px dotted rgba(148,163,184,0.6)';
+                } else if (item.type === 'highlight') {
+                    el.style.width = (item.w * s) + 'px';
+                    el.style.height = (item.h * s) + 'px';
+                    el.style.backgroundColor = 'rgba(250, 204, 21, 0.38)';
+                } else if (item.type === 'box') {
+                    el.style.width = (item.w * s) + 'px';
+                    el.style.height = (item.h * s) + 'px';
+                    el.style.border = (2 * s) + 'px solid ' + (item.color || '#dc2626');
+                } else if (item.type === 'image') {
+                    el.style.width = (item.w * s) + 'px';
+                    el.style.height = (item.h * s) + 'px';
+                    const img = document.createElement('img');
+                    img.src = item.dataUrl;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    img.style.pointerEvents = 'none';
+                    el.appendChild(img);
+                }
+
+                // Tirador de redimensionado para rectángulos e imágenes
+                if (isSel && item.type !== 'text') {
+                    const handle = document.createElement('div');
+                    handle.style.position = 'absolute';
+                    handle.style.right = '-5px';
+                    handle.style.bottom = '-5px';
+                    handle.style.width = '10px';
+                    handle.style.height = '10px';
+                    handle.style.backgroundColor = '#2563eb';
+                    handle.style.borderRadius = '2px';
+                    handle.style.cursor = 'nwse-resize';
+                    handle.addEventListener('mousedown', (ev) => startResizeEdItem(ev, item));
+                    el.appendChild(handle);
+                }
+
+                el.addEventListener('mousedown', (ev) => startDragEdItem(ev, item));
+                overlay.appendChild(el);
+            });
+
+            syncEdInspectorUI();
+        }
+
+        function syncEdInspectorUI() {
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            const item = pg ? pg.items.find(i => i.id === editPdfState.selectedItemId) : null;
+            const delBtn = document.getElementById('edDeleteSelectedBtn');
+            const textBar = document.getElementById('edTextEditBar');
+            const textInp = document.getElementById('edSelectedTextInput');
+
+            if (delBtn) delBtn.classList.toggle('hidden', !item);
+            if (item && item.type === 'text') {
+                textBar.classList.remove('hidden');
+                if (document.activeElement !== textInp) textInp.value = item.text || '';
+                document.getElementById('edPropFontSize').value = String(item.fontSize || 11);
+                document.getElementById('edPropColor').value = item.color || '#000000';
+            } else {
+                textBar.classList.add('hidden');
+            }
+        }
+
+        function updateSelectedEdItemProp(prop, val) {
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            if (!pg) return;
+            const item = pg.items.find(i => i.id === editPdfState.selectedItemId);
+            if (!item) return;
+            item[prop] = val;
+            renderEditPdfOverlayItems();
+        }
+
+        function toggleSelectedEdItemBold() {
+            editPdfState.boldDefault = !editPdfState.boldDefault;
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            const item = pg ? pg.items.find(i => i.id === editPdfState.selectedItemId) : null;
+            if (item && item.type === 'text') {
+                item.bold = !item.bold;
+                renderEditPdfOverlayItems();
+            }
+        }
+
+        function deleteSelectedEdItem() {
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            if (!pg || !editPdfState.selectedItemId) return;
+            pg.items = pg.items.filter(i => i.id !== editPdfState.selectedItemId);
+            editPdfState.selectedItemId = null;
+            renderEditPdfOverlayItems();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && editPdfState.selectedItemId && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                deleteSelectedEdItem();
+            }
+        });
+
+        function startDragEdItem(ev, item) {
+            ev.stopPropagation();
+            editPdfState.selectedItemId = item.id;
+            renderEditPdfOverlayItems();
+            const startX = ev.clientX;
+            const startY = ev.clientY;
+            const origX = item.x;
+            const origY = item.y;
+            const s = editPdfState.viewportScale;
+
+            function onMove(mEv) {
+                item.x = Math.max(0, origX + (mEv.clientX - startX) / s);
+                item.y = Math.max(0, origY + (mEv.clientY - startY) / s);
+                renderEditPdfOverlayItems();
+            }
+            function onUp() {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+            }
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+        }
+
+        function startResizeEdItem(ev, item) {
+            ev.stopPropagation();
+            const startX = ev.clientX;
+            const startY = ev.clientY;
+            const origW = item.w;
+            const origH = item.h;
+            const s = editPdfState.viewportScale;
+
+            function onMove(mEv) {
+                item.w = Math.max(12, origW + (mEv.clientX - startX) / s);
+                item.h = Math.max(10, origH + (mEv.clientY - startY) / s);
+                renderEditPdfOverlayItems();
+            }
+            function onUp() {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp);
+            }
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+        }
+
+        // Creación de elementos al hacer clic o arrastrar en el lienzo
+        (function initEditPdfOverlayEvents() {
+            const overlay = document.getElementById('editPdfOverlayLayer');
+            if (!overlay) return;
+            overlay.addEventListener('mousedown', (ev) => {
+                if (ev.target !== overlay) return;
+                const pg = editPdfState.pages[editPdfState.currentPageIdx];
+                if (!pg) return;
+                const rect = overlay.getBoundingClientRect();
+                const s = editPdfState.viewportScale;
+                const xPt = (ev.clientX - rect.left) / s;
+                const yPt = (ev.clientY - rect.top) / s;
+
+                if (editPdfState.tool === 'select') {
+                    editPdfState.selectedItemId = null;
+                    renderEditPdfOverlayItems();
+                    return;
+                }
+
+                if (editPdfState.tool === 'text') {
+                    const id = 'ed_' + Math.random().toString(36).substr(2, 8);
+                    const fontSize = parseInt(document.getElementById('edPropFontSize').value, 10) || 11;
+                    const color = document.getElementById('edPropColor').value || '#000000';
+                    pg.items.push({ id, type: 'text', x: xPt, y: yPt - fontSize * 0.5, text: 'Nuevo texto', fontSize, color, bold: editPdfState.boldDefault });
+                    editPdfState.selectedItemId = id;
+                    setPdfEditorTool('select');
+                    renderEditPdfOverlayItems();
+                    setTimeout(() => {
+                        const inp = document.getElementById('edSelectedTextInput');
+                        if (inp) { inp.focus(); inp.select(); }
+                    }, 30);
+                    return;
+                }
+
+                // Herramientas de arrastre (whiteout, highlight, box)
+                const id = 'ed_' + Math.random().toString(36).substr(2, 8);
+                const newItem = {
+                    id,
+                    type: editPdfState.tool,
+                    x: xPt,
+                    y: yPt,
+                    w: 10,
+                    h: 10,
+                    color: document.getElementById('edPropColor').value || '#dc2626',
+                    fillColor: document.getElementById('edPropFillColor').value || '#ffffff'
+                };
+                pg.items.push(newItem);
+                editPdfState.selectedItemId = id;
+                renderEditPdfOverlayItems();
+
+                function onMove(mEv) {
+                    const curX = (mEv.clientX - rect.left) / s;
+                    const curY = (mEv.clientY - rect.top) / s;
+                    newItem.x = Math.min(xPt, curX);
+                    newItem.y = Math.min(yPt, curY);
+                    newItem.w = Math.max(8, Math.abs(curX - xPt));
+                    newItem.h = Math.max(6, Math.abs(curY - yPt));
+                    renderEditPdfOverlayItems();
+                }
+                function onUp() {
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                    setPdfEditorTool('select');
+                }
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+            });
+
+            const imgInp = document.getElementById('editPdfImageInput');
+            if (imgInp) {
+                imgInp.addEventListener('change', (e) => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const pg = editPdfState.pages[editPdfState.currentPageIdx];
+                        if (!pg) return;
+                        const img = new Image();
+                        img.onload = () => {
+                            const maxW = 140;
+                            const ratio = img.height / (img.width || 1);
+                            const id = 'ed_' + Math.random().toString(36).substr(2, 8);
+                            pg.items.push({ id, type: 'image', x: 60, y: 60, w: maxW, h: Math.round(maxW * ratio), dataUrl: ev.target.result, mimeType: f.type });
+                            editPdfState.selectedItemId = id;
+                            setPdfEditorTool('select');
+                            renderEditPdfOverlayItems();
+                            showToast('Firma / imagen insertada');
+                        };
+                        img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(f);
+                    imgInp.value = '';
+                });
+            }
+        })();
+
+        function hexToPdfRgb(hex) {
+            const clean = (hex || '#000000').replace('#', '');
+            const r = parseInt(clean.substring(0, 2), 16) / 255 || 0;
+            const g = parseInt(clean.substring(2, 4), 16) / 255 || 0;
+            const b = parseInt(clean.substring(4, 6), 16) / 255 || 0;
+            return PDFLib.rgb(r, g, b);
+        }
+
+        async function exportEditedPdfDocument() {
+            if (!editPdfState.rawBytes || !editPdfState.pages.length) return;
+            const btn = document.getElementById('btnSaveEditedPdf');
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando PDF...';
+
+            try {
+                const srcDoc = await PDFLib.PDFDocument.load(editPdfState.rawBytes.slice(0), { ignoreEncryption: true });
+                const outDoc = await PDFLib.PDFDocument.create();
+                const fontRegular = await outDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+                const fontBold = await outDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+
+                for (let i = 0; i < editPdfState.pages.length; i++) {
+                    const pgMeta = editPdfState.pages[i];
+                    const [copiedPage] = await outDoc.copyPages(srcDoc, [pgMeta.origPageIndex]);
+                    if (pgMeta.rotation) {
+                        const prevRot = copiedPage.getRotation().angle || 0;
+                        copiedPage.setRotation(PDFLib.degrees((prevRot + pgMeta.rotation) % 360));
+                    }
+                    outDoc.addPage(copiedPage);
+                    const { width: pw, height: ph } = copiedPage.getSize();
+
+                    for (const item of pgMeta.items) {
+                        if (item.type === 'whiteout') {
+                            copiedPage.drawRectangle({
+                                x: item.x,
+                                y: ph - item.y - item.h,
+                                width: item.w,
+                                height: item.h,
+                                color: hexToPdfRgb(item.fillColor || '#ffffff')
+                            });
+                        } else if (item.type === 'highlight') {
+                            copiedPage.drawRectangle({
+                                x: item.x,
+                                y: ph - item.y - item.h,
+                                width: item.w,
+                                height: item.h,
+                                color: PDFLib.rgb(0.98, 0.8, 0.08),
+                                opacity: 0.35
+                            });
+                        } else if (item.type === 'box') {
+                            copiedPage.drawRectangle({
+                                x: item.x,
+                                y: ph - item.y - item.h,
+                                width: item.w,
+                                height: item.h,
+                                borderColor: hexToPdfRgb(item.color || '#dc2626'),
+                                borderWidth: 1.8
+                            });
+                        } else if (item.type === 'text' && item.text) {
+                            const fSize = item.fontSize || 11;
+                            copiedPage.drawText(item.text, {
+                                x: item.x + 2,
+                                y: ph - item.y - fSize,
+                                size: fSize,
+                                font: item.bold ? fontBold : fontRegular,
+                                color: hexToPdfRgb(item.color || '#000000')
+                            });
+                        } else if (item.type === 'image' && item.dataUrl) {
+                            const embeddedImg = item.dataUrl.startsWith('data:image/png')
+                                ? await outDoc.embedPng(item.dataUrl)
+                                : await outDoc.embedJpg(item.dataUrl);
+                            copiedPage.drawImage(embeddedImg, {
+                                x: item.x,
+                                y: ph - item.y - item.h,
+                                width: item.w,
+                                height: item.h
+                            });
+                        }
+                    }
+                }
+
+                const outBytes = await outDoc.save();
+                const blob = new Blob([outBytes], { type: 'application/pdf' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = editPdfState.fileName.replace(/.[^/.]+$/, '') + '_EDITADO.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast('¡PDF editado y descargado!');
+            } catch (err) {
+                console.error(err);
+                showToast('Error al generar el PDF editado');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+
 
         function clearSplitFile() {
             activeSplitFile = null;
