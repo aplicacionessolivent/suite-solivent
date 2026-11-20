@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v42 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v43 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1180,6 +1180,11 @@
                                 <span>Fondo parche:</span>
                                 <input type="color" id="edPropFillColor" value="#ffffff" onchange="updateSelectedEdItemProp('fillColor', this.value)" class="w-7 h-7 rounded cursor-pointer border border-gray-300 bg-transparent">
                             </label>
+                            <select id="edPropFontFamily" onchange="updateSelectedEdItemProp('fontFamily', this.value)" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-xs" title="Tipo de letra">
+                                <option value="Helvetica" selected>Helvetica</option>
+                                <option value="Times">Times Roman</option>
+                                <option value="Courier">Courier</option>
+                            </select>
                             <select id="edPropFontSize" onchange="updateSelectedEdItemProp('fontSize', parseInt(this.value,10))" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs">
                                 <option value="8">8 pt</option>
                                 <option value="9">9 pt</option>
@@ -1192,6 +1197,7 @@
                                 <option value="24">24 pt</option>
                             </select>
                             <button type="button" id="edPropBoldBtn" onclick="toggleSelectedEdItemBold()" class="px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 font-black text-xs" title="Negrita">B</button>
+                            <button type="button" id="edPropItalicBtn" onclick="toggleSelectedEdItemItalic()" class="px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 italic font-serif font-bold text-xs" title="Cursiva">I</button>
                             <button type="button" id="edDeleteSelectedBtn" onclick="deleteSelectedEdItem()" class="hidden px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-xs flex items-center gap-1" title="Eliminar elemento seleccionado (Supr)">
                                 <i class="fa-solid fa-trash-can"></i> Borrar
                             </button>
@@ -1199,9 +1205,9 @@
                     </div>
 
                     <!-- Editor de texto contextual cuando hay un bloque de texto seleccionado -->
-                    <div id="edTextEditBar" class="hidden bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-2.5 rounded-xl flex flex-wrap items-center gap-2">
-                        <span class="text-xs font-bold text-blue-900 dark:text-blue-200"><i class="fa-solid fa-i-cursor mr-1"></i>Texto seleccionado:</span>
-                        <input type="text" id="edSelectedTextInput" oninput="updateSelectedEdItemProp('text', this.value)" placeholder="Escribe aquí el texto..." class="flex-1 min-w-[200px] px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none">
+                    <div id="edTextEditBar" class="hidden bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 p-2.5 rounded-xl flex flex-wrap items-start gap-2">
+                        <span class="text-xs font-bold text-blue-900 dark:text-blue-200 pt-1.5"><i class="fa-solid fa-i-cursor mr-1"></i>Texto:</span>
+                        <textarea id="edSelectedTextInput" rows="2" oninput="updateSelectedEdItemProp('text', this.value)" placeholder="Escribe aquí el texto (admite varias líneas y redimensionado desde la esquina)..." class="flex-1 min-w-[220px] px-3 py-1.5 border border-blue-300 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800 text-xs font-semibold text-gray-900 dark:text-white focus:outline-none"></textarea>
                     </div>
 
                     <!-- Barra de navegación de páginas y Zoom -->
@@ -6247,17 +6253,18 @@ REGLAS:
 
 
         // =========================================================================
-        // 5. EDITOR VISUAL DE PDF (TEXTO, PARCHES, FIRMAS, RESALTADO Y PÁGINAS)
+        // 5. EDITOR VISUAL DE PDF (TEXTO REDIMENSIONABLE, FUENTES, PARCHES, FIRMAS)
         // =========================================================================
         let editPdfState = {
             fileName: '',
             rawBytes: null,
             pdfJsDoc: null,
-            pages: [], // [{ origPageIndex, rotation, items: [...] }]
+            pages: [],
             currentPageIdx: 0,
             tool: 'select',
             selectedItemId: null,
             boldDefault: false,
+            italicDefault: false,
             viewportScale: 1.25,
             baseWidthPt: 595,
             baseHeightPt: 842
@@ -6284,6 +6291,7 @@ REGLAS:
                     tool: 'select',
                     selectedItemId: null,
                     boldDefault: false,
+                    italicDefault: false,
                     viewportScale: parseFloat(document.getElementById('editPdfZoomSelect')?.value || '1.25') || 1.25,
                     baseWidthPt: 595,
                     baseHeightPt: 842
@@ -6388,6 +6396,12 @@ REGLAS:
             renderEditPdfOverlayItems();
         }
 
+        function getCssFontFamily(family) {
+            if (family === 'Times') return '"Times New Roman", Times, serif';
+            if (family === 'Courier') return '"Courier New", Courier, monospace';
+            return 'Helvetica, Arial, sans-serif';
+        }
+
         function renderEditPdfOverlayItems() {
             const pg = editPdfState.pages[editPdfState.currentPageIdx];
             const overlay = document.getElementById('editPdfOverlayLayer');
@@ -6406,18 +6420,25 @@ REGLAS:
                 el.style.boxSizing = 'border-box';
                 if (isSel) {
                     el.style.outline = '2px dashed #2563eb';
-                    el.style.outlineOffset = '2px';
+                    el.style.outlineOffset = '1px';
                 }
 
                 if (item.type === 'text') {
-                    el.style.fontFamily = 'Helvetica, Arial, sans-serif';
+                    const boxW = item.w || 180;
+                    const boxH = item.h || Math.max(22, (item.fontSize || 11) * 1.6);
+                    el.style.width = (boxW * s) + 'px';
+                    el.style.minHeight = (boxH * s) + 'px';
+                    el.style.fontFamily = getCssFontFamily(item.fontFamily || 'Helvetica');
                     el.style.fontSize = (item.fontSize * s) + 'px';
                     el.style.fontWeight = item.bold ? 'bold' : 'normal';
+                    el.style.fontStyle = item.italic ? 'italic' : 'normal';
                     el.style.color = item.color || '#000000';
-                    el.style.whiteSpace = 'pre';
-                    el.style.lineHeight = '1.15';
-                    el.style.padding = '1px 3px';
-                    el.innerText = item.text || 'Texto';
+                    el.style.whiteSpace = 'pre-wrap';
+                    el.style.wordBreak = 'break-word';
+                    el.style.lineHeight = '1.2';
+                    el.style.padding = '2px 4px';
+                    if (isSel) el.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+                    el.innerText = item.text || 'Nuevo texto';
                     el.addEventListener('dblclick', (ev) => {
                         ev.stopPropagation();
                         const inp = document.getElementById('edSelectedTextInput');
@@ -6448,17 +6469,20 @@ REGLAS:
                     el.appendChild(img);
                 }
 
-                // Tirador de redimensionado para rectángulos e imágenes
-                if (isSel && item.type !== 'text') {
+                // Tirador de redimensionado para TODOS los elementos (incluido cuadro de texto)
+                if (isSel) {
                     const handle = document.createElement('div');
                     handle.style.position = 'absolute';
-                    handle.style.right = '-5px';
-                    handle.style.bottom = '-5px';
-                    handle.style.width = '10px';
-                    handle.style.height = '10px';
+                    handle.style.right = '-6px';
+                    handle.style.bottom = '-6px';
+                    handle.style.width = '12px';
+                    handle.style.height = '12px';
                     handle.style.backgroundColor = '#2563eb';
-                    handle.style.borderRadius = '2px';
+                    handle.style.border = '2px solid #ffffff';
+                    handle.style.borderRadius = '3px';
+                    handle.style.boxShadow = '0 1px 3px rgba(0,0,0,0.4)';
                     handle.style.cursor = 'nwse-resize';
+                    handle.title = 'Arrastra para redimensionar';
                     handle.addEventListener('mousedown', (ev) => startResizeEdItem(ev, item));
                     el.appendChild(handle);
                 }
@@ -6476,11 +6500,28 @@ REGLAS:
             const delBtn = document.getElementById('edDeleteSelectedBtn');
             const textBar = document.getElementById('edTextEditBar');
             const textInp = document.getElementById('edSelectedTextInput');
+            const boldBtn = document.getElementById('edPropBoldBtn');
+            const italicBtn = document.getElementById('edPropItalicBtn');
 
             if (delBtn) delBtn.classList.toggle('hidden', !item);
+
+            const isBoldActive = item && item.type === 'text' ? Boolean(item.bold) : editPdfState.boldDefault;
+            const isItalicActive = item && item.type === 'text' ? Boolean(item.italic) : editPdfState.italicDefault;
+            if (boldBtn) {
+                boldBtn.className = isBoldActive
+                    ? 'px-2.5 py-1 border border-brand-600 rounded-lg bg-brand-600 text-white font-black text-xs'
+                    : 'px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 font-black text-xs';
+            }
+            if (italicBtn) {
+                italicBtn.className = isItalicActive
+                    ? 'px-2.5 py-1 border border-brand-600 rounded-lg bg-brand-600 text-white italic font-serif font-bold text-xs'
+                    : 'px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 italic font-serif font-bold text-xs';
+            }
+
             if (item && item.type === 'text') {
                 textBar.classList.remove('hidden');
                 if (document.activeElement !== textInp) textInp.value = item.text || '';
+                document.getElementById('edPropFontFamily').value = item.fontFamily || 'Helvetica';
                 document.getElementById('edPropFontSize').value = String(item.fontSize || 11);
                 document.getElementById('edPropColor').value = item.color || '#000000';
             } else {
@@ -6503,8 +6544,18 @@ REGLAS:
             const item = pg ? pg.items.find(i => i.id === editPdfState.selectedItemId) : null;
             if (item && item.type === 'text') {
                 item.bold = !item.bold;
-                renderEditPdfOverlayItems();
             }
+            renderEditPdfOverlayItems();
+        }
+
+        function toggleSelectedEdItemItalic() {
+            editPdfState.italicDefault = !editPdfState.italicDefault;
+            const pg = editPdfState.pages[editPdfState.currentPageIdx];
+            const item = pg ? pg.items.find(i => i.id === editPdfState.selectedItemId) : null;
+            if (item && item.type === 'text') {
+                item.italic = !item.italic;
+            }
+            renderEditPdfOverlayItems();
         }
 
         function deleteSelectedEdItem() {
@@ -6548,13 +6599,13 @@ REGLAS:
             ev.stopPropagation();
             const startX = ev.clientX;
             const startY = ev.clientY;
-            const origW = item.w;
-            const origH = item.h;
+            const origW = item.w || 180;
+            const origH = item.h || 24;
             const s = editPdfState.viewportScale;
 
             function onMove(mEv) {
-                item.w = Math.max(12, origW + (mEv.clientX - startX) / s);
-                item.h = Math.max(10, origH + (mEv.clientY - startY) / s);
+                item.w = Math.max(24, origW + (mEv.clientX - startX) / s);
+                item.h = Math.max(14, origH + (mEv.clientY - startY) / s);
                 renderEditPdfOverlayItems();
             }
             function onUp() {
@@ -6565,7 +6616,6 @@ REGLAS:
             window.addEventListener('mouseup', onUp);
         }
 
-        // Creación de elementos al hacer clic o arrastrar en el lienzo
         (function initEditPdfOverlayEvents() {
             const overlay = document.getElementById('editPdfOverlayLayer');
             if (!overlay) return;
@@ -6587,8 +6637,22 @@ REGLAS:
                 if (editPdfState.tool === 'text') {
                     const id = 'ed_' + Math.random().toString(36).substr(2, 8);
                     const fontSize = parseInt(document.getElementById('edPropFontSize').value, 10) || 11;
+                    const fontFamily = document.getElementById('edPropFontFamily')?.value || 'Helvetica';
                     const color = document.getElementById('edPropColor').value || '#000000';
-                    pg.items.push({ id, type: 'text', x: xPt, y: yPt - fontSize * 0.5, text: 'Nuevo texto', fontSize, color, bold: editPdfState.boldDefault });
+                    pg.items.push({
+                        id,
+                        type: 'text',
+                        x: xPt,
+                        y: yPt - fontSize * 0.5,
+                        w: 190,
+                        h: Math.max(24, fontSize * 1.8),
+                        text: 'Nuevo texto',
+                        fontFamily,
+                        fontSize,
+                        color,
+                        bold: editPdfState.boldDefault,
+                        italic: editPdfState.italicDefault
+                    });
                     editPdfState.selectedItemId = id;
                     setPdfEditorTool('select');
                     renderEditPdfOverlayItems();
@@ -6599,7 +6663,6 @@ REGLAS:
                     return;
                 }
 
-                // Herramientas de arrastre (whiteout, highlight, box)
                 const id = 'ed_' + Math.random().toString(36).substr(2, 8);
                 const newItem = {
                     id,
@@ -6669,6 +6732,32 @@ REGLAS:
             return PDFLib.rgb(r, g, b);
         }
 
+        function wrapPdfTextLines(text, font, fontSize, maxWidthPt) {
+            const paragraphs = String(text || '').split(/?
+/);
+            const wrapped = [];
+            paragraphs.forEach(para => {
+                if (!para.trim()) {
+                    wrapped.push('');
+                    return;
+                }
+                const words = para.split(' ');
+                let currentLine = '';
+                words.forEach(word => {
+                    const testLine = currentLine ? currentLine + ' ' + word : word;
+                    const w = font.widthOfTextAtSize(testLine, fontSize);
+                    if (w <= maxWidthPt || !currentLine) {
+                        currentLine = testLine;
+                    } else {
+                        wrapped.push(currentLine);
+                        currentLine = word;
+                    }
+                });
+                if (currentLine) wrapped.push(currentLine);
+            });
+            return wrapped;
+        }
+
         async function exportEditedPdfDocument() {
             if (!editPdfState.rawBytes || !editPdfState.pages.length) return;
             const btn = document.getElementById('btnSaveEditedPdf');
@@ -6679,8 +6768,21 @@ REGLAS:
             try {
                 const srcDoc = await PDFLib.PDFDocument.load(editPdfState.rawBytes.slice(0), { ignoreEncryption: true });
                 const outDoc = await PDFLib.PDFDocument.create();
-                const fontRegular = await outDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-                const fontBold = await outDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+
+                const fontMap = {
+                    'Helvetica_0_0': await outDoc.embedFont(PDFLib.StandardFonts.Helvetica),
+                    'Helvetica_1_0': await outDoc.embedFont(PDFLib.StandardFonts.HelveticaBold),
+                    'Helvetica_0_1': await outDoc.embedFont(PDFLib.StandardFonts.HelveticaOblique),
+                    'Helvetica_1_1': await outDoc.embedFont(PDFLib.StandardFonts.HelveticaBoldOblique),
+                    'Times_0_0': await outDoc.embedFont(PDFLib.StandardFonts.TimesRoman),
+                    'Times_1_0': await outDoc.embedFont(PDFLib.StandardFonts.TimesRomanBold),
+                    'Times_0_1': await outDoc.embedFont(PDFLib.StandardFonts.TimesRomanItalic),
+                    'Times_1_1': await outDoc.embedFont(PDFLib.StandardFonts.TimesRomanBoldItalic),
+                    'Courier_0_0': await outDoc.embedFont(PDFLib.StandardFonts.Courier),
+                    'Courier_1_0': await outDoc.embedFont(PDFLib.StandardFonts.CourierBold),
+                    'Courier_0_1': await outDoc.embedFont(PDFLib.StandardFonts.CourierOblique),
+                    'Courier_1_1': await outDoc.embedFont(PDFLib.StandardFonts.CourierBoldOblique)
+                };
 
                 for (let i = 0; i < editPdfState.pages.length; i++) {
                     const pgMeta = editPdfState.pages[i];
@@ -6690,7 +6792,7 @@ REGLAS:
                         copiedPage.setRotation(PDFLib.degrees((prevRot + pgMeta.rotation) % 360));
                     }
                     outDoc.addPage(copiedPage);
-                    const { width: pw, height: ph } = copiedPage.getSize();
+                    const { height: ph } = copiedPage.getSize();
 
                     for (const item of pgMeta.items) {
                         if (item.type === 'whiteout') {
@@ -6721,12 +6823,22 @@ REGLAS:
                             });
                         } else if (item.type === 'text' && item.text) {
                             const fSize = item.fontSize || 11;
-                            copiedPage.drawText(item.text, {
-                                x: item.x + 2,
-                                y: ph - item.y - fSize,
-                                size: fSize,
-                                font: item.bold ? fontBold : fontRegular,
-                                color: hexToPdfRgb(item.color || '#000000')
+                            const fam = item.fontFamily || 'Helvetica';
+                            const key = fam + '_' + (item.bold ? '1' : '0') + '_' + (item.italic ? '1' : '0');
+                            const chosenFont = fontMap[key] || fontMap['Helvetica_0_0'];
+                            const maxW = Math.max(20, (item.w || 190) - 6);
+                            const lines = wrapPdfTextLines(item.text, chosenFont, fSize, maxW);
+                            const lineHeight = fSize * 1.2;
+
+                            lines.forEach((ln, idx) => {
+                                if (!ln) return;
+                                copiedPage.drawText(ln, {
+                                    x: item.x + 3,
+                                    y: ph - item.y - fSize - (idx * lineHeight),
+                                    size: fSize,
+                                    font: chosenFont,
+                                    color: hexToPdfRgb(item.color || '#000000')
+                                });
                             });
                         } else if (item.type === 'image' && item.dataUrl) {
                             const embeddedImg = item.dataUrl.startsWith('data:image/png')
@@ -6759,7 +6871,6 @@ REGLAS:
                 btn.innerHTML = origHtml;
             }
         }
-
 
         function clearSplitFile() {
             activeSplitFile = null;
