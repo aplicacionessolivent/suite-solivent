@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v36 (Segura) - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v37 (Auditoría Completa) - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -229,7 +229,7 @@
             const url = cleanPhone
                 ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(body)}`
                 : `https://wa.me/?text=${encodeURIComponent(body)}`;
-            window.open(url, '_blank');
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function openQuickMessageInEmail() {
@@ -4583,7 +4583,7 @@
                             <span class="text-xs font-mono font-bold text-gray-400 w-5 text-right">${index + 1}.</span>
                             <i class="fa-solid fa-triangle-exclamation text-red-500 text-lg flex-shrink-0"></i>
                             <div class="truncate">
-                                <p class="font-medium text-gray-800 dark:text-gray-200 truncate">${item.originalName}</p>
+                                <p class="font-medium text-gray-800 dark:text-gray-200 truncate">${escapeHtml(item.originalName)}</p>
                                 <p class="text-xs text-red-500 font-medium">Error al procesar este archivo</p>
                             </div>
                         </div>
@@ -4595,8 +4595,8 @@
                             <span class="text-xs font-mono font-bold text-gray-400 w-5 text-right">${index + 1}.</span>
                             <i class="fa-solid fa-file-circle-check text-green-500 text-lg flex-shrink-0"></i>
                             <div class="truncate">
-                                <p class="font-medium text-gray-800 dark:text-gray-200 truncate" title="${item.outName}">${item.outName}</p>
-                                <p class="text-xs text-gray-400 truncate">Origen: ${item.originalName}</p>
+                                <p class="font-medium text-gray-800 dark:text-gray-200 truncate" title="${escapeHtml(item.outName)}">${escapeHtml(item.outName)}</p>
+                                <p class="text-xs text-gray-400 truncate">Origen: ${escapeHtml(item.originalName)}</p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
@@ -4614,7 +4614,7 @@
                             ${item.pdfBytes ? `<button type="button" onclick="sendAlbaranBySuiteMail('${item.id}')" class="px-2.5 py-1.5 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 dark:hover:bg-brand-900/60 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Enviar este albarán por Correo Corporativo con plantilla de aviso y PDF adjunto">
                                 <i class="fa-solid fa-paper-plane"></i> <span>Enviar Email</span>
                             </button>` : ''}
-                            ${item.url ? `<a href="${item.url}" download="${item.outName}" class="p-2 text-brand-600 hover:bg-brand-50 dark:hover:bg-gray-700 rounded-lg transition" title="Descargar solo este albarán">
+                            ${item.url ? `<a href="${item.url}" download="${escapeHtml(item.outName)}" class="p-2 text-brand-600 hover:bg-brand-50 dark:hover:bg-gray-700 rounded-lg transition" title="Descargar solo este albarán">
                                 <i class="fa-solid fa-download"></i>
                             </a>` : ''}
                             <button onclick="removeAlbaran('${item.id}')" class="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-300 ml-1"><i class="fa-solid fa-trash-can"></i></button>
@@ -6412,11 +6412,11 @@ REGLAS:
 
                     <div class="flex-1 min-w-0 space-y-1.5">
                         <div>
-                            <div class="flex items-center gap-1 text-xs font-mono font-bold text-brand-600 dark:text-brand-400 truncate" title="${newName}">
+                            <div class="flex items-center gap-1 text-xs font-mono font-bold text-brand-600 dark:text-brand-400 truncate" title="${escapeHtml(newName)}">
                                 <span>${index + 1}.</span>
-                                <span class="truncate">${newName}</span>
+                                <span class="truncate">${escapeHtml(newName)}</span>
                             </div>
-                            <p class="text-[11px] text-gray-400 truncate" title="${item.originalName}">${item.originalName}</p>
+                            <p class="text-[11px] text-gray-400 truncate" title="${escapeHtml(item.originalName)}">${escapeHtml(item.originalName)}</p>
                         </div>
                         
                         <div class="text-[11px] grid grid-cols-2 gap-1 text-gray-500 dark:text-gray-400">
@@ -6434,7 +6434,7 @@ REGLAS:
                             <button type="button" onclick="moveImageOrder(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25" title="Mover antes"><i class="fa-solid fa-chevron-up text-[11px]"></i></button>
                             <button type="button" onclick="moveImageOrder(${index}, 1)" ${index === imageList.length - 1 ? 'disabled' : ''} class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25" title="Mover después"><i class="fa-solid fa-chevron-down text-[11px]"></i></button>
                         </div>
-                        <a href="${item.previewUrl || '#'}" download="${newName}" class="p-1.5 text-brand-600 hover:bg-brand-50 dark:hover:bg-gray-700 rounded-lg text-center transition" title="Descargar esta foto">
+                        <a href="${item.previewUrl || '#'}" download="${escapeHtml(newName)}" class="p-1.5 text-brand-600 hover:bg-brand-50 dark:hover:bg-gray-700 rounded-lg text-center transition" title="Descargar esta foto">
                             <i class="fa-solid fa-download"></i>
                         </a>
                         <button type="button" onclick="removeImage('${item.id}')" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition" title="Eliminar">
@@ -7070,8 +7070,8 @@ REGLAS:
                             <img class="crop-img-3" src="${item.previewUrl || ''}" alt="miniatura">
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="font-bold text-gray-900 dark:text-white truncate" title="${labelTitle}">
-                                ${index + 1}. ${labelTitle}
+                            <div class="font-bold text-gray-900 dark:text-white truncate" title="${escapeHtml(labelTitle)}">
+                                ${index + 1}. ${escapeHtml(labelTitle)}
                             </div>
                             <select class="mt-1 w-full py-1 px-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-[11px] focus:ring-1 focus:ring-brand-500 focus:outline-none" onchange="setLabelItemSheetAndSlot('${item.id}', this.value)">
                                 ${optionsHtml}
@@ -8703,6 +8703,7 @@ REGLAS:
                 showToast('Permite ventanas emergentes para guardar como PDF');
                 return;
             }
+            printWin.opener = null;
             const msgsHtml = activeMailThreadData.messages.map(m => `
                 <div style="border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:14px; page-break-inside:avoid;">
                     <div style="border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:10px; font-size:12px;">
