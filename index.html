@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramientas Documentos v35 - Sol i Vent Paisajes</title>
+    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
+    <title>Herramientas Documentos v36 (Segura) - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2232,7 +2234,7 @@
                     <div class="pt-2 border-t border-purple-200/70 dark:border-purple-800/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <span class="text-[11px] font-bold text-purple-900 dark:text-purple-200 whitespace-nowrap"><i class="fa-solid fa-key mr-1"></i>Clave API Gemini:</span>
                         <input type="password" id="arborInlineApiKey" oninput="syncInlineGeminiKey(this.value)" placeholder="Pega aquí tu clave de Google AI Studio..." class="flex-1 px-2.5 py-1 border border-purple-300 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-mono focus:outline-none">
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-purple-700 dark:text-purple-300 font-bold underline whitespace-nowrap">Obtener clave <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] text-purple-700 dark:text-purple-300 font-bold underline whitespace-nowrap">Obtener clave <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
                     </div>
                 </div>
             </div>
@@ -2370,7 +2372,7 @@
                     <div class="pt-2 border-t border-purple-200/70 dark:border-purple-800/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <span class="text-[11px] font-bold text-purple-900 dark:text-purple-200 whitespace-nowrap"><i class="fa-solid fa-key mr-1"></i>Clave API Gemini:</span>
                         <input type="password" id="maqInlineApiKey" oninput="syncInlineGeminiKey(this.value)" placeholder="Pega aquí tu clave de Google AI Studio..." class="flex-1 px-2.5 py-1 border border-purple-300 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-mono focus:outline-none">
-                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-purple-700 dark:text-purple-300 font-bold underline whitespace-nowrap">Obtener clave <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] text-purple-700 dark:text-purple-300 font-bold underline whitespace-nowrap">Obtener clave <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
                     </div>
                 </div>
             </div>
@@ -2399,7 +2401,7 @@
             <div class="space-y-3 text-xs text-gray-600 dark:text-gray-300">
                 <p>Para que la suite lea la letra escrita a mano por los operarios, necesitas una <strong>clave gratuita (API Key)</strong> de Google. Solo tienes que sacarla una vez:</p>
                 <ol class="list-decimal pl-4 space-y-1.5 bg-purple-50/70 dark:bg-purple-900/20 p-3 rounded-xl border border-purple-200 dark:border-purple-800 text-[11px]">
-                    <li>Abre <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-purple-700 dark:text-purple-300 font-bold underline">Google AI Studio (aistudio.google.com) <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a> e inicia sesión con tu cuenta de Google.</li>
+                    <li>Abre <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-purple-700 dark:text-purple-300 font-bold underline">Google AI Studio (aistudio.google.com) <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a> e inicia sesión con tu cuenta de Google.</li>
                     <li>Pulsa el botón azul <strong>"Create API key"</strong> (Crear clave de API).</li>
                     <li>Pulsa el icono de <strong>copiar</strong> en la fila de tu clave creada y pégala aquí abajo.</li>
                 </ol>
@@ -2951,15 +2953,75 @@
             }
         }
 
+        // --- CIFRADO AES-GCM NATIVO PARA COPIAS DE SEGURIDAD ---
+        async function deriveBackupAesKey(password, saltBytes) {
+            const enc = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+            return await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt: saltBytes, iterations: 150000, hash: 'SHA-256' },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        function bytesToBase64(uint8) {
+            let bin = '';
+            for (let i = 0; i < uint8.length; i++) bin += String.fromCharCode(uint8[i]);
+            return btoa(bin);
+        }
+
+        function base64ToBytes(b64) {
+            const bin = atob(b64);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return arr;
+        }
+
+        async function encryptPayloadWithPassword(plainObject, password) {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveBackupAesKey(password, salt);
+            const encoded = new TextEncoder().encode(JSON.stringify(plainObject));
+            const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+            return {
+                app: 'Solivent_Suite_Herramientas_Encrypted',
+                version: 'v36',
+                encrypted: true,
+                kdf: 'PBKDF2-SHA256-150000',
+                cipher: 'AES-256-GCM',
+                exportedAt: new Date().toISOString(),
+                salt: bytesToBase64(salt),
+                iv: bytesToBase64(iv),
+                ciphertext: bytesToBase64(new Uint8Array(cipherBuf))
+            };
+        }
+
+        async function decryptPayloadWithPassword(encryptedObj, password) {
+            const salt = base64ToBytes(encryptedObj.salt);
+            const iv = base64ToBytes(encryptedObj.iv);
+            const ciphertext = base64ToBytes(encryptedObj.ciphertext);
+            const key = await deriveBackupAesKey(password, salt);
+            const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+            return JSON.parse(new TextDecoder().decode(plainBuf));
+        }
+
         // --- COPIA DE SEGURIDAD GENERAL, PROGRAMADA Y RESTAURACIÓN COMPLETA ---
-        function buildFullSuitePayload() {
+        function buildFullSuitePayload(includeSecrets = true) {
+            const platformsList = getPlatforms();
+            const safePlatforms = includeSecrets
+                ? platformsList
+                : platformsList.map(p => ({ ...p, pass: '' }));
+
             return {
                 app: 'Solivent_Suite_Herramientas',
-                version: 'v25',
+                version: 'v36',
                 exportedAt: new Date().toISOString(),
+                includesSecrets: Boolean(includeSecrets),
                 data: {
                     contacts: getContacts(),
-                    platforms: getPlatforms(),
+                    platforms: safePlatforms,
                     platformGroups: getGroups(),
                     collapsedGroups: getCollapsedGroups(),
                     notes: getNotes(),
@@ -2970,7 +3032,7 @@
                     expeditionHistory: getExpeditionHistory(),
                     quickMessages: getQuickMessageTemplates(),
                     homeModulesOrder: JSON.parse(localStorage.getItem('solivent_home_order') || 'null'),
-                    geminiApiKey: localStorage.getItem('solivent_gemini_api_key') || '',
+                    geminiApiKey: includeSecrets ? (localStorage.getItem('solivent_gemini_api_key') || '') : '',
                     gmailClientId: localStorage.getItem('solivent_gmail_client_id') || '905848196987-si2ial3ojss3is4cb67uu9d15pj8a0go.apps.googleusercontent.com'
                 }
             };
@@ -2983,19 +3045,42 @@
             updateAutoBackupUI();
         }
 
-        function exportFullSuiteBackup(silent = false) {
-            const fullPayload = buildFullSuitePayload();
-            const blob = new Blob([JSON.stringify(fullPayload, null, 2)], { type: 'application/json' });
+        async function exportFullSuiteBackup(silent = false) {
+            let payloadToSave = null;
+            let suffix = '';
+
+            if (!silent && window.crypto && window.crypto.subtle) {
+                const pwd = prompt(
+                    'SEGURIDAD DE COPIA DE SEGURIDAD:\n\n' +
+                    '• Escribe una CONTRASEÑA para cifrar la copia con AES-256 (incluirá contraseñas y API Key protegidas).\n' +
+                    '• O déjalo en BLANCO y pulsa Aceptar para descargar la copia sin contraseñas ni API Key en texto plano:'
+                );
+                if (pwd === null) return; // Cancelado por el usuario
+                if (pwd.trim().length > 0) {
+                    const rawPayload = buildFullSuitePayload(true);
+                    payloadToSave = await encryptPayloadWithPassword(rawPayload, pwd.trim());
+                    suffix = '_CIFRADA';
+                } else {
+                    payloadToSave = buildFullSuitePayload(false);
+                }
+            } else {
+                // En copias automáticas en segundo plano no se exportan secretos en claro
+                payloadToSave = buildFullSuitePayload(false);
+            }
+
+            const blob = new Blob([JSON.stringify(payloadToSave, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `BACKUP_GENERAL_SUITE_SOLIVENT_${new Date().toISOString().slice(0, 10)}.json`;
+            a.download = `BACKUP_GENERAL_SUITE_SOLIVENT${suffix}_${new Date().toISOString().slice(0, 10)}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             markFullBackupCompleted();
-            if (!silent) showToast('Copia de seguridad general descargada');
+            if (!silent) {
+                showToast(suffix ? 'Copia general cifrada con AES-256 descargada' : 'Copia general descargada (sin secretos en claro)');
+            }
         }
 
         // --- PROGRAMADOR DE COPIAS DE SEGURIDAD ---
@@ -3276,9 +3361,21 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = (evt) => {
+            reader.onload = async (evt) => {
                 try {
-                    const parsed = JSON.parse(evt.target.result);
+                    let parsed = JSON.parse(evt.target.result);
+
+                    // Si el respaldo está cifrado con AES-256-GCM, pedir contraseña para descifrar
+                    if (parsed && parsed.app === 'Solivent_Suite_Herramientas_Encrypted' && parsed.encrypted) {
+                        const pwd = prompt('Esta copia de seguridad está cifrada con AES-256.\nIntroduce la contraseña para descifrarla:');
+                        if (!pwd) return;
+                        try {
+                            parsed = await decryptPayloadWithPassword(parsed, pwd.trim());
+                        } catch (decErr) {
+                            alert('Contraseña incorrecta o archivo dañado. No se ha podido descifrar la copia.');
+                            return;
+                        }
+                    }
 
                     // Caso 1: Copia de Seguridad General completa
                     if (parsed && parsed.app === 'Solivent_Suite_Herramientas' && parsed.data && typeof parsed.data === 'object') {
@@ -3964,9 +4061,12 @@
         }
 
         function renderPlatformCard(p, isSearching) {
+            const safeId = escapeHtml(p.id);
+            const safeJsId = escapeJs(p.id);
+            const safeHref = escapeHtml(sanitizeUrl(p.url));
             const passMasked = p.pass ? '•'.repeat(Math.min(p.pass.length, 12)) : '<i>(sin contraseña)</i>';
             return `
-                <div draggable="${!isSearching}" data-id="${p.id}" class="platform-card bg-gray-50/50 dark:bg-gray-700/30 p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between space-y-4 hover:border-brand-300 dark:hover:border-brand-600 transition ${!isSearching ? 'cursor-grab active:cursor-grabbing' : ''}">
+                <div draggable="${!isSearching}" data-id="${safeId}" class="platform-card bg-gray-50/50 dark:bg-gray-700/30 p-4 md:p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between space-y-4 hover:border-brand-300 dark:hover:border-brand-600 transition ${!isSearching ? 'cursor-grab active:cursor-grabbing' : ''}">
                     <div>
                         <div class="flex justify-between items-start gap-2">
                             <div class="flex items-center space-x-3 min-w-0 flex-1">
@@ -3976,15 +4076,15 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <h3 class="font-bold text-gray-900 dark:text-white text-base leading-snug truncate" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</h3>
-                                    <a href="${escapeHtml(p.url)}" target="_blank" class="text-xs text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1 max-w-full" title="${escapeHtml(p.url)}">
+                                    <a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="text-xs text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1 max-w-full" title="${escapeHtml(p.url)}">
                                         <span class="truncate block max-w-[180px] sm:max-w-[220px]">${escapeHtml(p.url)}</span>
                                         <i class="fa-solid fa-arrow-up-right-from-square text-[10px] flex-shrink-0"></i>
                                     </a>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-1 flex-shrink-0">
-                                <button type="button" onclick="editPlatform('${p.id}')" class="p-1.5 text-gray-400 hover:text-brand-600 rounded-lg transition" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                <button type="button" onclick="deletePlatform('${p.id}')" class="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                                <button type="button" onclick="editPlatform('${safeJsId}')" class="p-1.5 text-gray-400 hover:text-brand-600 rounded-lg transition" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                <button type="button" onclick="deletePlatform('${safeJsId}')" class="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </div>
 
@@ -4019,10 +4119,10 @@
                             <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 gap-2">
                                 <span class="text-gray-500 dark:text-gray-400 font-medium flex-shrink-0">Contraseña:</span>
                                 <div class="flex items-center space-x-2 min-w-0 justify-end">
-                                    <span id="pass_${p.id}" class="font-mono font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[120px]">${passMasked}</span>
+                                    <span id="pass_${safeId}" class="font-mono font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[120px]">${passMasked}</span>
                                     ${p.pass ? `
-                                        <button type="button" onclick="togglePassVisibility('${p.id}', '${escapeJs(p.pass)}')" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0" title="Mostrar/Ocultar"><i id="eye_${p.id}" class="fa-solid fa-eye text-xs"></i></button>
-                                        <button type="button" onclick="copyText('${escapeJs(p.pass)}', 'Contraseña copiada')" class="p-1 text-gray-500 hover:text-brand-600 font-semibold text-[11px] bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 shadow-sm flex-shrink-0" title="Copiar contraseña"><i class="fa-regular fa-copy"></i> Copiar</button>
+                                        <button type="button" onclick="togglePlatformPassById('${safeJsId}')" class="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex-shrink-0" title="Mostrar/Ocultar"><i id="eye_${safeId}" class="fa-solid fa-eye text-xs"></i></button>
+                                        <button type="button" onclick="copyPlatformPassById('${safeJsId}')" class="p-1 text-gray-500 hover:text-brand-600 font-semibold text-[11px] bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 shadow-sm flex-shrink-0" title="Copiar contraseña (se limpia del portapapeles a los 30s)"><i class="fa-regular fa-copy"></i> Copiar</button>
                                     ` : ''}
                                 </div>
                             </div>
@@ -4030,7 +4130,7 @@
                     </div>
 
                     <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-                        <a href="${escapeHtml(p.url)}" target="_blank" class="flex-1 py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs transition shadow flex items-center justify-center gap-1.5">
+                        <a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 px-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs transition shadow flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i>
                             <span>Abrir Plataforma Web</span>
                         </a>
@@ -4108,6 +4208,18 @@
             }
         }
 
+        function togglePlatformPassById(id) {
+            const p = getPlatforms().find(item => item.id === id);
+            if (!p) return;
+            togglePassVisibility(id, p.pass || '');
+        }
+
+        function copyPlatformPassById(id) {
+            const p = getPlatforms().find(item => item.id === id);
+            if (!p || !p.pass) return;
+            copyText(p.pass, 'Contraseña copiada (se limpiará del portapapeles en 30s)', true);
+        }
+
         function togglePassVisibility(id, pass) {
             const el = document.getElementById(`pass_${id}`);
             const eye = document.getElementById(`eye_${id}`);
@@ -4166,7 +4278,29 @@
             }
         }
 
-        function copyText(text, toastMsg) {
+        let sensitiveClipboardTimer = null;
+        function copyText(text, toastMsg, isSensitive = false) {
+            const finishCopy = () => {
+                showToast(toastMsg);
+                if (isSensitive) {
+                    if (sensitiveClipboardTimer) clearTimeout(sensitiveClipboardTimer);
+                    sensitiveClipboardTimer = setTimeout(() => {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText('').catch(() => {});
+                        }
+                    }, 30000);
+                }
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(finishCopy).catch(() => {
+                    fallbackCopyText(text, finishCopy);
+                });
+            } else {
+                fallbackCopyText(text, finishCopy);
+            }
+        }
+
+        function fallbackCopyText(text, onDone) {
             const ta = document.createElement('textarea');
             ta.value = text;
             ta.style.position = 'fixed';
@@ -4175,7 +4309,7 @@
             ta.select();
             try {
                 document.execCommand('copy');
-                showToast(toastMsg);
+                if (onDone) onDone();
             } catch (err) {
                 console.error(err);
             }
@@ -4242,11 +4376,44 @@
         }
 
         function escapeHtml(str) {
-            return String(str || '').replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function escapeJs(str) {
-            return String(str || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+            return String(str || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '\\"')
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/</g, '\\u003c')
+                .replace(/>/g, '\\u003e');
+        }
+
+        function sanitizeUrl(rawUrl) {
+            const val = String(rawUrl || '').trim();
+            if (!val) return '#';
+            try {
+                const parsed = new URL(val, 'https://example.invalid');
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return val;
+                }
+            } catch (e) {}
+            return '#';
+        }
+
+        function stripHtmlSafely(rawHtml) {
+            try {
+                const doc = new DOMParser().parseFromString(String(rawHtml || ''), 'text/html');
+                return doc.body ? (doc.body.textContent || '') : '';
+            } catch (e) {
+                return String(rawHtml || '').replace(/<[^>]*>/g, ' ');
+            }
         }
 
         // --- LÓGICA CONVERTIDOR ALBARÁN ---
@@ -8244,9 +8411,7 @@ REGLAS:
                     const parsedBody = extractMessageBodiesAndAttachments(m.payload);
                     let plainText = parsedBody.plain;
                     if (!plainText && parsedBody.html) {
-                        const tmp = document.createElement('div');
-                        tmp.innerHTML = parsedBody.html;
-                        plainText = tmp.textContent || tmp.innerText || '';
+                        plainText = stripHtmlSafely(parsedBody.html);
                     }
                     return {
                         id: m.id,
@@ -10353,9 +10518,12 @@ REGLAS:
             btn.disabled = true;
             btn.innerText = 'Probando...';
             try {
-                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(val)}`, {
+                const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': val
+                    },
                     body: JSON.stringify({ contents: [{ parts: [{ text: 'Responde solo OK' }] }] })
                 });
                 if (resp.ok) {
@@ -11918,14 +12086,17 @@ REGLAS:
             try {
                 const fetchOpts = {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey
+                    },
                     body: JSON.stringify({
                         contents: [{ parts }],
                         generationConfig: { response_mime_type: 'application/json' }
                     })
                 };
                 if (abortSignal) fetchOpts.signal = abortSignal;
-                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`, fetchOpts);
+                response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', fetchOpts);
             } catch (netErr) {
                 if (netErr && netErr.name === 'AbortError') {
                     throw new Error(exportAbortFlag ? 'EXPORT_CANCELLED' : 'La conexión con Gemini fue interrumpida.');
