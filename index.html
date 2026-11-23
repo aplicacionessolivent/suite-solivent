@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v43 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v44 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -305,6 +305,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- pdf-lib -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
     <!-- pdf.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <!-- JSZip -->
@@ -1181,7 +1182,10 @@
                                 <input type="color" id="edPropFillColor" value="#ffffff" onchange="updateSelectedEdItemProp('fillColor', this.value)" class="w-7 h-7 rounded cursor-pointer border border-gray-300 bg-transparent">
                             </label>
                             <select id="edPropFontFamily" onchange="updateSelectedEdItemProp('fontFamily', this.value)" class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold text-xs" title="Tipo de letra">
-                                <option value="Helvetica" selected>Helvetica</option>
+                                <option value="Arial" selected>Arial</option>
+                                <option value="Calibri">Calibri</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Helvetica">Helvetica</option>
                                 <option value="Times">Times Roman</option>
                                 <option value="Courier">Courier</option>
                             </select>
@@ -6397,9 +6401,12 @@ REGLAS:
         }
 
         function getCssFontFamily(family) {
+            if (family === 'Calibri') return 'Calibri, Carlito, "Segoe UI", sans-serif';
+            if (family === 'Georgia') return 'Georgia, Caladea, "Times New Roman", serif';
+            if (family === 'Arial') return 'Arial, Helvetica, sans-serif';
             if (family === 'Times') return '"Times New Roman", Times, serif';
             if (family === 'Courier') return '"Courier New", Courier, monospace';
-            return 'Helvetica, Arial, sans-serif';
+            return 'Arial, Helvetica, sans-serif';
         }
 
         function renderEditPdfOverlayItems() {
@@ -6521,7 +6528,7 @@ REGLAS:
             if (item && item.type === 'text') {
                 textBar.classList.remove('hidden');
                 if (document.activeElement !== textInp) textInp.value = item.text || '';
-                document.getElementById('edPropFontFamily').value = item.fontFamily || 'Helvetica';
+                document.getElementById('edPropFontFamily').value = item.fontFamily || 'Arial';
                 document.getElementById('edPropFontSize').value = String(item.fontSize || 11);
                 document.getElementById('edPropColor').value = item.color || '#000000';
             } else {
@@ -6637,7 +6644,7 @@ REGLAS:
                 if (editPdfState.tool === 'text') {
                     const id = 'ed_' + Math.random().toString(36).substr(2, 8);
                     const fontSize = parseInt(document.getElementById('edPropFontSize').value, 10) || 11;
-                    const fontFamily = document.getElementById('edPropFontFamily')?.value || 'Helvetica';
+                    const fontFamily = document.getElementById('edPropFontFamily')?.value || 'Arial';
                     const color = document.getElementById('edPropColor').value || '#000000';
                     pg.items.push({
                         id,
@@ -6757,6 +6764,61 @@ REGLAS:
             return wrapped;
         }
 
+        const embeddedCustomFontCache = {};
+
+        async function resolvePdfEditorFont(outDoc, family, bold, italic, standardFontMap) {
+            const b = bold ? '1' : '0';
+            const it = italic ? '1' : '0';
+            const fam = family || 'Arial';
+
+            // 1. Mapeo directo a fuentes estándar PDF (Arial -> Helvetica, Times -> TimesRoman, Courier -> Courier)
+            if (fam === 'Arial' || fam === 'Helvetica') {
+                return standardFontMap['Helvetica_' + b + '_' + it];
+            }
+            if (fam === 'Times') {
+                return standardFontMap['Times_' + b + '_' + it];
+            }
+            if (fam === 'Courier') {
+                return standardFontMap['Courier_' + b + '_' + it];
+            }
+
+            // 2. Fuentes adicionales: Calibri (Carlito métricamente idéntica) y Georgia (Caladea métricamente idéntica)
+            const urls = {
+                'Calibri_0_0': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito/Carlito-Regular.ttf',
+                'Calibri_1_0': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito/Carlito-Bold.ttf',
+                'Calibri_0_1': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito/Carlito-Italic.ttf',
+                'Calibri_1_1': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/carlito/Carlito-BoldItalic.ttf',
+                'Georgia_0_0': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/caladea/Caladea-Regular.ttf',
+                'Georgia_1_0': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/caladea/Caladea-Bold.ttf',
+                'Georgia_0_1': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/caladea/Caladea-Italic.ttf',
+                'Georgia_1_1': 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/caladea/Caladea-BoldItalic.ttf'
+            };
+
+            const key = fam + '_' + b + '_' + it;
+            if (urls[key] && window.fontkit) {
+                try {
+                    if (!embeddedCustomFontCache[key]) {
+                        const res = await fetch(urls[key]);
+                        if (res.ok) {
+                            embeddedCustomFontCache[key] = await res.arrayBuffer();
+                        }
+                    }
+                    if (embeddedCustomFontCache[key]) {
+                        outDoc.registerFontkit(window.fontkit);
+                        return await outDoc.embedFont(embeddedCustomFontCache[key], { subset: true });
+                    }
+                } catch (e) {
+                    console.warn('Usando respaldo estándar para fuente ' + fam, e);
+                }
+            }
+
+            // Respaldo offline automático si no hubiera conexión externa
+            if (fam === 'Georgia') {
+                return standardFontMap['Times_' + b + '_' + it];
+            }
+            return standardFontMap['Helvetica_' + b + '_' + it];
+        }
+
         async function exportEditedPdfDocument() {
             if (!editPdfState.rawBytes || !editPdfState.pages.length) return;
             const btn = document.getElementById('btnSaveEditedPdf');
@@ -6822,9 +6884,8 @@ REGLAS:
                             });
                         } else if (item.type === 'text' && item.text) {
                             const fSize = item.fontSize || 11;
-                            const fam = item.fontFamily || 'Helvetica';
-                            const key = fam + '_' + (item.bold ? '1' : '0') + '_' + (item.italic ? '1' : '0');
-                            const chosenFont = fontMap[key] || fontMap['Helvetica_0_0'];
+                            const fam = item.fontFamily || 'Arial';
+                            const chosenFont = await resolvePdfEditorFont(outDoc, fam, item.bold, item.italic, fontMap);
                             const maxW = Math.max(20, (item.w || 190) - 6);
                             const lines = wrapPdfTextLines(item.text, chosenFont, fSize, maxW);
                             const lineHeight = fSize * 1.2;
@@ -6857,7 +6918,7 @@ REGLAS:
                 const blob = new Blob([outBytes], { type: 'application/pdf' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = editPdfState.fileName.replace(/.[^/.]+$/, '') + '_EDITADO.pdf';
+                a.download = editPdfState.fileName.replace(/\.[^/.]+$/, '') + '_EDITADO.pdf';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
