@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v47 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v49 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -708,9 +708,13 @@
                             <span>Registro / Historial de Expediciones</span>
                             <span id="expeditionHistoryCount" class="text-xs bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded-full font-bold">0</span>
                         </h3>
-                        <p class="text-[11px] text-gray-400">Consulta rápida de pedidos preparados, agencia elegida, bultos y control de etiqueta pegada</p>
+                        <p class="text-[11px] text-gray-400">Consulta rápida de pedidos preparados, agencia elegida, bultos, control de etiqueta pegada y avisos internos</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                        <button type="button" onclick="bridgePendingExpeditionsToLabels()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center gap-1.5" title="Ir a Etiquetas A4 con la plantilla recomendada y la lista de pedidos pendientes de etiquetar">
+                            <i class="fa-solid fa-tags"></i>
+                            <span>Pasar pendientes a Etiquetas A4</span>
+                        </button>
                         <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                             <label for="expeditionPageSizeSelect" class="font-semibold whitespace-nowrap">Mostrar:</label>
                             <select id="expeditionPageSizeSelect" onchange="changeExpeditionPageSize(this.value)" class="py-1.5 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
@@ -720,12 +724,39 @@
                                 <option value="0">Todos</option>
                             </select>
                         </div>
-                        <div class="relative flex-1 sm:w-56">
+                        <div class="relative flex-1 sm:w-52">
                             <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-gray-400 text-xs"></i>
                             <input type="text" id="expeditionSearchInput" oninput="onExpeditionSearchInput()" placeholder="Buscar albarán, cliente, agencia..." class="w-full pl-8 pr-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
                         </div>
                         <button type="button" onclick="clearExpeditionHistory()" class="px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg font-semibold transition" title="Limpiar historial antiguo">
                             <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Barra de Aviso Interno Rápido (Eva, Merche u otros responsables) -->
+                <div class="bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 text-xs">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane text-emerald-600"></i>
+                            <span>Aviso interno a:</span>
+                        </span>
+                        <select id="internalRecipientSelect" onchange="saveSelectedInternalRecipient(this.value)" class="py-1.5 px-2.5 border border-emerald-300 dark:border-emerald-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"></select>
+                        <button type="button" onclick="openInternalNotifyConfigModal()" class="px-2.5 py-1.5 bg-white dark:bg-gray-800 hover:bg-emerald-100 dark:hover:bg-gray-700 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 rounded-lg font-semibold transition flex items-center gap-1" title="Gestionar tabla de responsables internos y plantillas de aviso">
+                            <i class="fa-solid fa-gear text-emerald-600"></i> <span>Responsables y Mensajes</span>
+                        </button>
+                    </div>
+
+                    <div id="expeditionBatchNotifyBar" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                        <span class="font-bold text-emerald-700 dark:text-emerald-300"><span id="expeditionSelectedCount">0</span> seleccionado(s):</span>
+                        <button type="button" onclick="sendBatchInternalNotice('preparado')" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-md font-bold text-[11px] transition flex items-center gap-1" title="Enviar un único correo resumen indicando que estos pedidos están preparados">
+                            <i class="fa-solid fa-box-open"></i> Avisar lote (Preparados)
+                        </button>
+                        <button type="button" onclick="sendBatchInternalNotice('preparado_transporte')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-[11px] transition flex items-center gap-1" title="Enviar un único correo resumen indicando que están preparados y con transporte solicitado">
+                            <i class="fa-solid fa-truck-fast"></i> Avisar lote (Prep. + Transp.)
+                        </button>
+                        <button type="button" onclick="clearExpeditionBatchSelection()" class="text-gray-400 hover:text-gray-600 px-1" title="Deseleccionar todos">
+                            <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
                 </div>
@@ -1447,6 +1478,26 @@
 
         <!-- SECCIÓN 5: POSICIONADOR DE ETIQUETAS -->
         <div id="sectionLabels" class="hidden space-y-6">
+            <!-- Panel Puente de Expediciones Pendientes de Etiquetar -->
+            <div id="labelsPendingBridgeBanner" class="hidden bg-indigo-50 dark:bg-indigo-900/25 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-4 space-y-2.5 shadow-xs">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-indigo-950 dark:text-indigo-100">
+                        <i class="fa-solid fa-clipboard-list text-indigo-600 text-sm"></i>
+                        <span>Pedidos pendientes de etiquetar (<span id="labelsPendingBridgeCount">0</span>):</span>
+                        <span class="font-normal text-[11px] text-indigo-700 dark:text-indigo-300">Márcalos conforme vayas colocando sus etiquetas en la hoja A4</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="markAllBridgePendingLabeled()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition shadow-2xs flex items-center gap-1">
+                            <i class="fa-solid fa-check-double"></i> Marcar todos etiquetados
+                        </button>
+                        <button type="button" onclick="closeLabelsPendingBridge()" class="px-2 py-1 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800/40 rounded-lg text-[11px] font-semibold">
+                            Ocultar panel
+                        </button>
+                    </div>
+                </div>
+                <div id="labelsPendingBridgeList" class="flex flex-wrap gap-2"></div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div class="lg:col-span-7 space-y-5 bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div>
@@ -3002,6 +3053,107 @@
     </div>
 
     <datalist id="contactsEmailDatalist"></datalist>
+
+    
+    <!-- Modal Gestión de Responsables Internos y Mensajes de Aviso -->
+    <div id="internalNotifyConfigModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-5 border border-gray-200 dark:border-gray-700 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Responsables Internos y Mensajes de Pedido</h3>
+                        <p class="text-xs text-gray-400">Configura a quién se avisa y personaliza libremente los textos de correo</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeInternalNotifyConfigModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- Bloque 1: Tabla editable de contactos internos -->
+            <div class="space-y-2.5 text-xs">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-address-card text-brand-600"></i>
+                        <span>Contactos internos destinatarios:</span>
+                    </h4>
+                </div>
+
+                <form onsubmit="addInternalRecipient(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2 bg-gray-50 dark:bg-gray-700/40 p-2.5 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <div class="sm:col-span-4">
+                        <input type="text" id="newInternalRecName" required placeholder="Nombre (ej: Eva)" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-semibold">
+                    </div>
+                    <div class="sm:col-span-6">
+                        <input type="email" id="newInternalRecEmail" required placeholder="Correo (ej: eva@solivent.eu)" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs font-mono">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <button type="submit" class="w-full py-1.5 px-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold text-xs transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Añadir
+                        </button>
+                    </div>
+                </form>
+
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50 text-[11px] uppercase text-gray-500 dark:text-gray-400">
+                            <tr>
+                                <th class="py-2 px-3">Nombre</th>
+                                <th class="py-2 px-3">Correo electrónico</th>
+                                <th class="py-2 px-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="internalRecipientsTableBody" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bloque 2: Plantillas editables (Preparado / Preparado + Transporte / Personalizadas) -->
+            <div class="space-y-3 text-xs pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h4 class="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-envelope-open-text text-emerald-600"></i>
+                        <span>Plantillas de Aviso Interno (Editables y ampliables):</span>
+                    </h4>
+                    <button type="button" onclick="openNewInternalTemplateForm()" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Nueva plantilla manual
+                    </button>
+                </div>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                    Variables disponibles: <code class="text-brand-600 font-bold">{nombre}</code> (responsable), <code class="text-brand-600 font-bold">{numero}</code> (nº presupuesto/albarán), <code class="text-brand-600 font-bold">{cliente}</code>, <code class="text-brand-600 font-bold">{agencia}</code>, <code class="text-brand-600 font-bold">{bultos}</code>.
+                </p>
+
+                <!-- Formulario para crear/editar plantilla interna -->
+                <div id="internalTplEditorCard" class="hidden bg-blue-50/70 dark:bg-blue-900/20 p-3.5 rounded-xl border border-blue-200 dark:border-blue-800 space-y-2.5">
+                    <input type="hidden" id="editInternalTplId">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Etiqueta del botón *</label>
+                            <input type="text" id="editInternalTplLabel" placeholder="Ej: Recogida en tienda" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Asunto del correo *</label>
+                            <input type="text" id="editInternalTplSubject" placeholder="Ej: Pedido {numero} listo para recoger" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs font-semibold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Texto del mensaje *</label>
+                        <textarea id="editInternalTplBody" rows="3" placeholder="Hola {nombre}, te informo de que el pedido/albarán {numero} ({cliente})..." class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="closeInternalTplEditorCard()" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold">Cancelar</button>
+                        <button type="button" onclick="saveInternalTemplateItem()" class="px-3.5 py-1 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold">Guardar Plantilla</button>
+                    </div>
+                </div>
+
+                <div id="internalTemplatesList" class="space-y-2"></div>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
+                <button type="button" onclick="closeInternalNotifyConfigModal()" class="px-4 py-2 bg-gray-900 hover:bg-black dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-xl text-xs font-bold">Listo</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="py-4 text-center text-xs text-gray-400 dark:text-gray-500 border-t border-gray-200 dark:border-gray-800 mt-auto">
@@ -7679,12 +7831,12 @@ REGLAS:
             }
         }
 
-        // --- LÓGICA POSICIONADOR DE ETIQUETAS MULTI-HOJA ---
+        // --- LÓGICA POSICIONADOR DE ETIQUETAS MULTI-HOJA CON SEPARACIÓN AUTOMÁTICA POR AGENCIA ---
         let currentLabelMode = 3;
         let labelItems = [];
         let draggedLabelItemId = null;
         let currentPreviewSheet = 0;
-        let manualSheetCount = 1;
+        let manualSheetCounts = { 3: 1, 4: 1 };
 
         const labelDropZone = document.getElementById('labelDropZone');
         const labelFileInput = document.getElementById('labelFileInput');
@@ -7705,19 +7857,25 @@ REGLAS:
             labelFileInput.value = '';
         });
 
-        function getTotalSheetCount() {
-            let maxPage = manualSheetCount - 1;
-            labelItems.forEach(it => {
+        function getModeItems(mode = currentLabelMode) {
+            return labelItems.filter(it => (it.carrierMode || 3) === mode);
+        }
+
+        function getTotalSheetCount(mode = currentLabelMode) {
+            const items = getModeItems(mode);
+            let maxPage = (manualSheetCounts[mode] || 1) - 1;
+            items.forEach(it => {
                 if ((it.targetPage || 0) > maxPage) maxPage = it.targetPage;
             });
             return Math.max(1, maxPage + 1);
         }
 
-        function findNextFreeSlot() {
+        function findNextFreeSlot(mode = currentLabelMode) {
+            const items = getModeItems(mode);
             let p = 0;
             while (true) {
-                for (let s = 0; s < currentLabelMode; s++) {
-                    const occupied = labelItems.some(it => (it.targetPage || 0) === p && it.targetSlot === s);
+                for (let s = 0; s < mode; s++) {
+                    const occupied = items.some(it => (it.targetPage || 0) === p && it.targetSlot === s);
                     if (!occupied) {
                         return { page: p, slot: s };
                     }
@@ -7726,69 +7884,130 @@ REGLAS:
             }
         }
 
+        function classifyLabelCarrierMode(textStr, origW, origH, fileName = '') {
+            const t = String(textStr || '');
+            const fn = String(fileName || '');
+
+            // 1. Detección inequívoca por texto interno o nombre de archivo: SEUR (1/3 Horizontal)
+            if (/\bSEUR\b/i.test(t) || /INT-BAR/i.test(t) || /Bultos:\s*\d+\s*\/\s*\d+/i.test(t) || /SEUR\s*24|SEUR\s*10|SEUR\s*13:30/i.test(t) || /\bSEUR\b/i.test(fn)) {
+                return 3;
+            }
+
+            // 2. Detección inequívoca por texto interno o nombre de archivo: GLS / MRW (1/4 Cuadrícula)
+            if (/\bGLS\b/i.test(t) || /General\s+Logistics/i.test(t) || /\bMRW\b/i.test(t) || /EuroBusinessParcel|BusinessParcel/i.test(t) || /\b(GLS|MRW)\b/i.test(fn)) {
+                return 4;
+            }
+
+            // 3. Fallback por dimensiones físicas del PDF:
+            // Las etiquetas térmicas individuales de GLS/MRW suelen ser ~105x150 mm (~297x425 pt), mucho más pequeñas que un A4 (595x842 pt)
+            const isA4FullPage = Math.abs(origH - 841.89) < 35 && Math.abs(origW - 595.27) < 35;
+            if (!isA4FullPage && origW > 0 && origW < 450 && origH < 550) {
+                return 4;
+            }
+
+            return currentLabelMode;
+        }
+
         async function handleLabelFiles(files) {
+            let addedSeur = 0;
+            let addedGlsMrw = 0;
+
             for (const file of files) {
                 const buffer = await file.arrayBuffer();
                 const bytes = new Uint8Array(buffer);
-                
+
+                let textStr = '';
+                let origW = 595.27;
+                let origH = 841.89;
+
                 try {
                     const pdf = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
                     const page = await pdf.getPage(1);
+                    const vp = page.getViewport({ scale: 1.0 });
+                    origW = vp.width;
+                    origH = vp.height;
                     const textContent = await page.getTextContent();
-                    const textStr = textContent.items.map(s => s.str).join(' ');
+                    textStr = textContent.items.map(s => s.str).join(' ');
+                } catch (e) {
+                    console.warn('No se pudo analizar el PDF:', e);
+                }
 
+                const targetMode = classifyLabelCarrierMode(textStr, origW, origH, file.name);
+
+                if (targetMode === 3) {
                     const matchBultos = textStr.match(/Bultos:\s*(\d+)\s*\/\s*(\d+)/i);
                     const countIntBar = (textStr.match(/INT-BAR/g) || []).length;
                     const countRecogida = (textStr.match(/RECOGIDA/g) || []).length;
                     const isMultiBultoSeur = (matchBultos && parseInt(matchBultos[2], 10) >= 2) || countIntBar >= 2 || countRecogida >= 2;
 
-                    if (currentLabelMode === 3 && isMultiBultoSeur) {
+                    if (isMultiBultoSeur) {
                         const thumbUrl1 = await generateCroppedThumbnail(bytes, 0, 3);
                         const thumbUrl2 = await generateCroppedThumbnail(bytes, 1, 3);
 
-                        const pos1 = findNextFreeSlot();
+                        const pos1 = findNextFreeSlot(3);
                         labelItems.push({
                             id: Math.random().toString(36).substr(2, 9),
                             file: file,
                             rawBytes: bytes,
                             previewUrl: thumbUrl1,
+                            carrierMode: 3,
                             targetPage: pos1.page,
                             targetSlot: pos1.slot,
                             sourceSubIndex: 0,
                             displayName: `${file.name} (Bulto 1)`
                         });
 
-                        const pos2 = findNextFreeSlot();
+                        const pos2 = findNextFreeSlot(3);
                         labelItems.push({
                             id: Math.random().toString(36).substr(2, 9),
                             file: file,
                             rawBytes: bytes,
                             previewUrl: thumbUrl2,
+                            carrierMode: 3,
                             targetPage: pos2.page,
                             targetSlot: pos2.slot,
                             sourceSubIndex: 1,
                             displayName: `${file.name} (Bulto 2)`
                         });
+                        addedSeur += 2;
                         continue;
                     }
-                } catch (e) {
-                    console.warn("No se pudo analizar el texto del PDF, procesando como etiqueta normal:", e);
                 }
 
-                const thumbUrl = await generateLabelThumbnail(bytes);
-                const pos = findNextFreeSlot();
+                const thumbUrl = await generateLabelThumbnail(bytes, targetMode);
+                const pos = findNextFreeSlot(targetMode);
                 labelItems.push({
                     id: Math.random().toString(36).substr(2, 9),
                     file: file,
                     rawBytes: bytes,
                     previewUrl: thumbUrl,
+                    carrierMode: targetMode,
                     targetPage: pos.page,
                     targetSlot: pos.slot,
                     sourceSubIndex: null,
                     displayName: file.name
                 });
+
+                if (targetMode === 3) addedSeur++;
+                else addedGlsMrw++;
             }
-            updateLabelsUI();
+
+            // Si todas las etiquetas subidas pertenecen a una sola agencia, cambiar automáticamente a esa pestaña
+            if (addedSeur > 0 && addedGlsMrw === 0 && currentLabelMode !== 3) {
+                changeLabelMode(3, false);
+            } else if (addedGlsMrw > 0 && addedSeur === 0 && currentLabelMode !== 4) {
+                changeLabelMode(4, false);
+            } else {
+                updateLabelsUI();
+            }
+
+            if (addedSeur > 0 && addedGlsMrw > 0) {
+                showToast(`Clasificadas: ${addedSeur} en SEUR (1/3) y ${addedGlsMrw} en GLS/MRW (1/4)`);
+            } else if (addedGlsMrw > 0) {
+                showToast(`${addedGlsMrw} etiqueta(s) colocadas en GLS / MRW (1/4)`);
+            } else if (addedSeur > 0) {
+                showToast(`${addedSeur} etiqueta(s) colocadas en SEUR (1/3)`);
+            }
         }
 
         async function generateCroppedThumbnail(bytes, subIndex, totalParts) {
@@ -7821,13 +8040,13 @@ REGLAS:
             }
         }
 
-        async function generateLabelThumbnail(bytes) {
+        async function generateLabelThumbnail(bytes, mode = currentLabelMode) {
             try {
                 const pdf = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
                 const page = await pdf.getPage(1);
                 const viewport = page.getViewport({ scale: 1.0 });
 
-                if (currentLabelMode === 3 && viewport.height > viewport.width * 1.3) {
+                if (mode === 3 && viewport.height > viewport.width * 1.3) {
                     return await generateCroppedThumbnail(bytes, 0, 3);
                 }
 
@@ -7841,8 +8060,8 @@ REGLAS:
             }
         }
 
-        function getSlotNames() {
-            return currentLabelMode === 3
+        function getSlotNames(mode = currentLabelMode) {
+            return mode === 3
                 ? ["Tercio Sup. (Hueco 1)", "Tercio Central (Hueco 2)", "Tercio Inf. (Hueco 3)"]
                 : ["Sup. Izq. (Hueco 1)", "Sup. Der. (Hueco 2)", "Inf. Izq. (Hueco 3)", "Inf. Der. (Hueco 4)"];
         }
@@ -7851,6 +8070,8 @@ REGLAS:
             currentLabelMode = mode;
             const btnSeur = document.getElementById('btnModeSeur');
             const btnGls = document.getElementById('btnModeGls');
+            const seurCount = getModeItems(3).length;
+            const glsCount = getModeItems(4).length;
 
             if (mode === 3) {
                 btnSeur.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-brand-600 text-white border-brand-600 shadow-sm';
@@ -7859,23 +8080,33 @@ REGLAS:
                 btnGls.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-brand-600 text-white border-brand-600 shadow-sm';
                 btnSeur.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-brand-500';
             }
-            
-            // Reempaqueta y redistribuye todas las etiquetas según la capacidad del modo activo
-            labelItems.forEach((it, index) => {
-                it.targetPage = Math.floor(index / currentLabelMode);
-                it.targetSlot = index % currentLabelMode;
-            });
 
-            manualSheetCount = getTotalSheetCount();
+            btnSeur.innerHTML = `<i class="fa-solid fa-box"></i> <span>SEUR (1/3 Horizontal)</span>${seurCount > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[11px] font-black ${mode === 3 ? 'bg-white/25 text-white' : 'bg-brand-100 text-brand-700'}">${seurCount}</span>` : ''}`;
+            btnGls.innerHTML = `<i class="fa-solid fa-truck"></i> <span>GLS / MRW (1/4 Cuadrícula)</span>${glsCount > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[11px] font-black ${mode === 4 ? 'bg-white/25 text-white' : 'bg-brand-100 text-brand-700'}">${glsCount}</span>` : ''}`;
+
             currentPreviewSheet = 0;
             updateLabelsUI();
         }
 
-        function addNewSheet() {
-            manualSheetCount = getTotalSheetCount() + 1;
-            currentPreviewSheet = manualSheetCount - 1;
+        async function moveLabelToOtherCarrierMode(id) {
+            const item = labelItems.find(it => it.id === id);
+            if (!item) return;
+            const newMode = (item.carrierMode || 3) === 3 ? 4 : 3;
+            const newPos = findNextFreeSlot(newMode);
+            item.carrierMode = newMode;
+            item.sourceSubIndex = null;
+            item.targetPage = newPos.page;
+            item.targetSlot = newPos.slot;
+            item.previewUrl = await generateLabelThumbnail(item.rawBytes, newMode);
             updateLabelsUI();
-            showToast(`Añadida Hoja ${manualSheetCount}`);
+            showToast(newMode === 3 ? 'Movida a SEUR (1/3)' : 'Movida a GLS / MRW (1/4)');
+        }
+
+        function addNewSheet() {
+            manualSheetCounts[currentLabelMode] = getTotalSheetCount(currentLabelMode) + 1;
+            currentPreviewSheet = manualSheetCounts[currentLabelMode] - 1;
+            updateLabelsUI();
+            showToast(`Añadida Hoja ${manualSheetCounts[currentLabelMode]}`);
         }
 
         function selectPreviewSheet(sheetIdx) {
@@ -7890,8 +8121,8 @@ REGLAS:
 
         function setLabelItemSheetAndSlot(id, value) {
             if (value === '__NEW__') {
-                const newSheet = getTotalSheetCount();
-                manualSheetCount = newSheet + 1;
+                const newSheet = getTotalSheetCount(currentLabelMode);
+                manualSheetCounts[currentLabelMode] = newSheet + 1;
                 const item = labelItems.find(it => it.id === id);
                 if (item) {
                     item.targetPage = newSheet;
@@ -7912,9 +8143,9 @@ REGLAS:
         }
 
         function resetAllLabels() {
-            labelItems = [];
+            labelItems = labelItems.filter(it => (it.carrierMode || 3) !== currentLabelMode);
             currentPreviewSheet = 0;
-            manualSheetCount = 1;
+            manualSheetCounts[currentLabelMode] = 1;
             labelFileInput.value = '';
             updateLabelsUI();
         }
@@ -7931,10 +8162,11 @@ REGLAS:
 
         function handleDropOnLabelSlot(targetSlotIndex) {
             if (!draggedLabelItemId) return;
-            const sourceItem = labelItems.find(it => it.id === draggedLabelItemId);
+            const activeItems = getModeItems(currentLabelMode);
+            const sourceItem = activeItems.find(it => it.id === draggedLabelItemId);
             if (!sourceItem) return;
 
-            const destItem = labelItems.find(it => (it.targetPage || 0) === currentPreviewSheet && it.targetSlot === targetSlotIndex);
+            const destItem = activeItems.find(it => (it.targetPage || 0) === currentPreviewSheet && it.targetSlot === targetSlotIndex);
             if (destItem && destItem.id !== sourceItem.id) {
                 destItem.targetPage = sourceItem.targetPage || 0;
                 destItem.targetSlot = sourceItem.targetSlot;
@@ -7946,20 +8178,38 @@ REGLAS:
         }
 
         function updateLabelsUI() {
-            const slotNames = getSlotNames();
+            const btnSeur = document.getElementById('btnModeSeur');
+            const btnGls = document.getElementById('btnModeGls');
+            const seurCount = getModeItems(3).length;
+            const glsCount = getModeItems(4).length;
+
+            if (btnSeur && btnGls) {
+                if (currentLabelMode === 3) {
+                    btnSeur.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-brand-600 text-white border-brand-600 shadow-sm';
+                    btnGls.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-brand-500';
+                } else {
+                    btnGls.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-brand-600 text-white border-brand-600 shadow-sm';
+                    btnSeur.className = 'py-2.5 px-4 rounded-xl border font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-brand-500';
+                }
+                btnSeur.innerHTML = `<i class="fa-solid fa-box"></i> <span>SEUR (1/3 Horizontal)</span>${seurCount > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[11px] font-black ${currentLabelMode === 3 ? 'bg-white/25 text-white' : 'bg-brand-100 text-brand-700'}">${seurCount}</span>` : ''}`;
+                btnGls.innerHTML = `<i class="fa-solid fa-truck"></i> <span>GLS / MRW (1/4 Cuadrícula)</span>${glsCount > 0 ? `<span class="ml-1 px-1.5 py-0.2 rounded-full text-[11px] font-black ${currentLabelMode === 4 ? 'bg-white/25 text-white' : 'bg-brand-100 text-brand-700'}">${glsCount}</span>` : ''}`;
+            }
+
+            const slotNames = getSlotNames(currentLabelMode);
             const listContainer = document.getElementById('labelsListContainer');
             const conflictNotice = document.getElementById('labelConflictNotice');
             const countText = document.getElementById('labelsCountText');
-            const totalSheets = getTotalSheetCount();
+            const activeItems = getModeItems(currentLabelMode);
+            const totalSheets = getTotalSheetCount(currentLabelMode);
 
             if (currentPreviewSheet >= totalSheets) {
                 currentPreviewSheet = totalSheets - 1;
             }
 
-            countText.textContent = labelItems.length;
+            countText.textContent = `${activeItems.length} en este formato (${labelItems.length} total)`;
 
             const slotCounts = {};
-            labelItems.forEach(it => {
+            activeItems.forEach(it => {
                 const key = `${it.targetPage || 0}_${it.targetSlot}`;
                 slotCounts[key] = (slotCounts[key] || 0) + 1;
             });
@@ -7968,12 +8218,14 @@ REGLAS:
             if (hasConflict) conflictNotice.classList.remove('hidden');
             else conflictNotice.classList.add('hidden');
 
-            // Renderizar lista lateral de etiquetas
-            if (labelItems.length === 0) {
-                listContainer.innerHTML = '<div class="text-xs text-gray-400 dark:text-gray-500 text-center py-8 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">No has cargado ninguna etiqueta todavía.</div>';
+            // Renderizar lista lateral de etiquetas del formato activo
+            if (activeItems.length === 0) {
+                const otherCount = currentLabelMode === 3 ? glsCount : seurCount;
+                const otherLabel = currentLabelMode === 3 ? 'GLS / MRW (1/4)' : 'SEUR (1/3)';
+                listContainer.innerHTML = `<div class="text-xs text-gray-400 dark:text-gray-500 text-center py-8 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">No hay etiquetas asignadas en este formato.${otherCount > 0 ? `<br><span class="text-brand-600 dark:text-brand-400 font-semibold">Tienes ${otherCount} etiqueta(s) esperando en ${otherLabel}.</span>` : ''}</div>`;
             } else {
                 listContainer.innerHTML = '';
-                labelItems.forEach((item, index) => {
+                activeItems.forEach((item, index) => {
                     const card = document.createElement('div');
                     const itemPage = item.targetPage || 0;
                     const isDuplicated = slotCounts[`${itemPage}_${item.targetSlot}`] > 1;
@@ -7994,6 +8246,7 @@ REGLAS:
                     optionsHtml += `<option value="__NEW__">+ Mover a nueva Hoja ${totalSheets + 1}...</option>`;
 
                     const labelTitle = item.displayName || item.file.name;
+                    const moveTargetName = currentLabelMode === 3 ? 'GLS/MRW' : 'SEUR';
 
                     card.innerHTML = `
                         <div class="w-12 h-14 overflow-hidden border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 flex-shrink-0 relative flex items-center justify-center p-0.5">
@@ -8007,6 +8260,9 @@ REGLAS:
                                 ${optionsHtml}
                             </select>
                         </div>
+                        <button type="button" class="px-2 py-1 text-[10px] font-bold bg-gray-200/80 dark:bg-gray-600 hover:bg-brand-100 text-gray-700 dark:text-gray-200 rounded transition whitespace-nowrap" title="Mover esta etiqueta a la plantilla de ${moveTargetName}" onclick="moveLabelToOtherCarrierMode('${item.id}')">
+                            → ${moveTargetName}
+                        </button>
                         <button class="p-1.5 text-red-500 hover:text-red-700 dark:hover:text-red-400 rounded transition" title="Eliminar etiqueta" onclick="removeLabelItem('${item.id}')">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
@@ -8020,7 +8276,7 @@ REGLAS:
             if (tabsContainer) {
                 tabsContainer.innerHTML = '';
                 for (let p = 0; p < totalSheets; p++) {
-                    const countOnSheet = labelItems.filter(it => (it.targetPage || 0) === p).length;
+                    const countOnSheet = activeItems.filter(it => (it.targetPage || 0) === p).length;
                     const isActive = p === currentPreviewSheet;
                     const tabBtn = document.createElement('button');
                     tabBtn.type = 'button';
@@ -8038,7 +8294,7 @@ REGLAS:
 
             for (let i = 0; i < currentLabelMode; i++) {
                 const slotBox = document.createElement('div');
-                const itemsInSlot = labelItems.filter(it => (it.targetPage || 0) === currentPreviewSheet && it.targetSlot === i);
+                const itemsInSlot = activeItems.filter(it => (it.targetPage || 0) === currentPreviewSheet && it.targetSlot === i);
                 const isOccupied = itemsInSlot.length > 0;
                 slotBox.className = `label-slot ${isOccupied ? 'occupied' : ''} bg-gray-50/70 hover:bg-gray-100/70`;
 
@@ -8069,38 +8325,41 @@ REGLAS:
 
             const statusText = document.getElementById('sheetStatusText');
             if (statusText) {
-                const labelsOnSheet = labelItems.filter(it => (it.targetPage || 0) === currentPreviewSheet).length;
-                statusText.innerHTML = `Viendo <strong>Hoja ${currentPreviewSheet + 1} de ${totalSheets}</strong> (${labelsOnSheet} etiqueta(s) asignada(s))`;
+                const labelsOnSheet = activeItems.filter(it => (it.targetPage || 0) === currentPreviewSheet).length;
+                const modeLabel = currentLabelMode === 3 ? 'SEUR 1/3' : 'GLS / MRW 1/4';
+                statusText.innerHTML = `Viendo <strong>${modeLabel} · Hoja ${currentPreviewSheet + 1} de ${totalSheets}</strong> (${labelsOnSheet} etiqueta(s))`;
             }
 
             const btnText = document.getElementById('btnPdfText');
             if (btnText) {
-                btnText.textContent = totalSheets > 1 ? `PDF Completo (${totalSheets} Hojas)` : 'Descargar PDF A4';
+                const prefix = currentLabelMode === 3 ? 'PDF SEUR' : 'PDF GLS/MRW';
+                btnText.textContent = totalSheets > 1 ? `${prefix} (${totalSheets} Hojas)` : `Descargar ${prefix}`;
             }
 
-            document.getElementById('btnGenerateLabelPdf').disabled = labelItems.length === 0;
-            document.getElementById('btnDownloadZipPdf').disabled = labelItems.length === 0;
-            document.getElementById('btnClearLabels').disabled = labelItems.length === 0;
+            document.getElementById('btnGenerateLabelPdf').disabled = activeItems.length === 0;
+            document.getElementById('btnDownloadZipPdf').disabled = activeItems.length === 0;
+            document.getElementById('btnClearLabels').disabled = activeItems.length === 0;
         }
 
         async function buildAndDownloadLabelPdf(asZip = false) {
-            if (labelItems.length === 0) return;
+            const activeItems = getModeItems(currentLabelMode);
+            if (activeItems.length === 0) return;
             const btn = asZip ? document.getElementById('btnDownloadZipPdf') : document.getElementById('btnGenerateLabelPdf');
             const origText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
 
             try {
-                const totalSheets = getTotalSheetCount();
+                const totalSheets = getTotalSheetCount(currentLabelMode);
                 const a4W = 595.27, a4H = 841.89;
+                const tagName = currentLabelMode === 3 ? 'SEUR' : 'GLS_MRW';
 
                 if (!asZip) {
-                    // Generar un único PDF con múltiples páginas A4
                     const outputDoc = await PDFLib.PDFDocument.create();
 
                     for (let p = 0; p < totalSheets; p++) {
                         const targetPage = outputDoc.addPage([a4W, a4H]);
-                        const itemsOnPage = labelItems.filter(it => (it.targetPage || 0) === p);
+                        const itemsOnPage = activeItems.filter(it => (it.targetPage || 0) === p);
 
                         for (const item of itemsOnPage) {
                             await drawItemOnPage(outputDoc, targetPage, item, a4W, a4H);
@@ -8110,32 +8369,31 @@ REGLAS:
                     const finalBytes = await outputDoc.save();
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(new Blob([finalBytes], { type: "application/pdf" }));
-                    a.download = `etiquetas_${totalSheets}_hojas_${Date.now()}.pdf`;
+                    a.download = `etiquetas_${tagName}_${totalSheets}_hojas_${Date.now()}.pdf`;
                     a.click();
-                    showToast(`¡PDF de ${totalSheets} hoja(s) generado con éxito!`);
+                    showToast(`¡PDF ${tagName} de ${totalSheets} hoja(s) generado con éxito!`);
                 } else {
-                    // Generar archivos PDF individuales empaquetados en un .ZIP
                     const zip = new JSZip();
 
                     for (let p = 0; p < totalSheets; p++) {
                         const singleDoc = await PDFLib.PDFDocument.create();
                         const targetPage = singleDoc.addPage([a4W, a4H]);
-                        const itemsOnPage = labelItems.filter(it => (it.targetPage || 0) === p);
+                        const itemsOnPage = activeItems.filter(it => (it.targetPage || 0) === p);
 
                         for (const item of itemsOnPage) {
                             await drawItemOnPage(singleDoc, targetPage, item, a4W, a4H);
                         }
 
                         const pageBytes = await singleDoc.save();
-                        zip.file(`Hoja_${p + 1}_etiquetas.pdf`, pageBytes);
+                        zip.file(`Hoja_${p + 1}_${tagName}_etiquetas.pdf`, pageBytes);
                     }
 
                     const zipBlob = await zip.generateAsync({ type: 'blob' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(zipBlob);
-                    a.download = `etiquetas_separadas_${Date.now()}.zip`;
+                    a.download = `etiquetas_${tagName}_separadas_${Date.now()}.zip`;
                     a.click();
-                    showToast('¡Archivo ZIP con todas las hojas descargado!');
+                    showToast(`¡Archivo ZIP ${tagName} descargado!`);
                 }
             } catch (err) {
                 console.error(err);
@@ -11377,24 +11635,519 @@ REGLAS:
             if (suitePaginationState[key]) suitePaginationState[key].page = 1;
         }
 
-        let expeditionCurrentPage = 1;
-        let expeditionPageSize = 10;
+        // --- RESPONSABLES INTERNOS Y PLANTILLAS DE AVISO DE PEDIDOS ---
+        const DEFAULT_INTERNAL_RECIPIENTS = [
+            { id: 'rec_eva', name: 'Eva', email: 'eva@solivent.eu' },
+            { id: 'rec_merche', name: 'Merche', email: 'comercial@solivent.eu' }
+        ];
+
+        const DEFAULT_INTERNAL_NOTIFY_TEMPLATES = [
+            {
+                id: 'int_preparado',
+                label: 'Preparado',
+                subject: 'Pedido {numero} preparado',
+                body: 'Hola {nombre}, te informo de que el pedido/albarán {numero} ({cliente}) ya está preparado.'
+            },
+            {
+                id: 'int_prep_transporte',
+                label: 'Prep. + Transp.',
+                subject: 'Pedido {numero} preparado y transporte solicitado',
+                body: 'Hola {nombre}, te informo de que el pedido/albarán {numero} ({cliente}) ya está preparado y el transporte ({agencia} · {bultos}) ya está solicitado.'
+            }
+        ];
+
+        let selectedExpeditionIds = new Set();
+        let labelsBridgeActive = false;
+
+        function getInternalRecipients() {
+            try {
+                const raw = localStorage.getItem('solivent_internal_recipients');
+                if (!raw) {
+                    localStorage.setItem('solivent_internal_recipients', JSON.stringify(DEFAULT_INTERNAL_RECIPIENTS));
+                    return DEFAULT_INTERNAL_RECIPIENTS;
+                }
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_INTERNAL_RECIPIENTS;
+            } catch (e) {
+                return DEFAULT_INTERNAL_RECIPIENTS;
+            }
+        }
+
+        function saveInternalRecipients(list) {
+            localStorage.setItem('solivent_internal_recipients', JSON.stringify(list));
+            renderInternalRecipientSelector();
+            renderInternalRecipientsTable();
+        }
+
+        function getSelectedInternalRecipient() {
+            const list = getInternalRecipients();
+            const savedId = localStorage.getItem('solivent_active_internal_rec');
+            return list.find(r => r.id === savedId) || list[0];
+        }
+
+        function saveSelectedInternalRecipient(recId) {
+            localStorage.setItem('solivent_active_internal_rec', recId);
+        }
+
+        function renderInternalRecipientSelector() {
+            const sel = document.getElementById('internalRecipientSelect');
+            if (!sel) return;
+            const list = getInternalRecipients();
+            const active = getSelectedInternalRecipient();
+            sel.innerHTML = list.map(r => `<option value="${escapeHtml(r.id)}" ${active && active.id === r.id ? 'selected' : ''}>${escapeHtml(r.name)} (${escapeHtml(r.email)})</option>`).join('');
+        }
+
+        function getInternalNotifyTemplates() {
+            try {
+                const raw = localStorage.getItem('solivent_internal_notify_templates');
+                if (!raw) {
+                    localStorage.setItem('solivent_internal_notify_templates', JSON.stringify(DEFAULT_INTERNAL_NOTIFY_TEMPLATES));
+                    return DEFAULT_INTERNAL_NOTIFY_TEMPLATES;
+                }
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_INTERNAL_NOTIFY_TEMPLATES;
+            } catch (e) {
+                return DEFAULT_INTERNAL_NOTIFY_TEMPLATES;
+            }
+        }
+
+        function saveInternalNotifyTemplates(list) {
+            localStorage.setItem('solivent_internal_notify_templates', JSON.stringify(list));
+            renderInternalTemplatesList();
+            renderExpeditionHistory();
+        }
+
+        function openInternalNotifyConfigModal() {
+            renderInternalRecipientsTable();
+            renderInternalTemplatesList();
+            closeInternalTplEditorCard();
+            document.getElementById('internalNotifyConfigModal').classList.remove('hidden');
+        }
+
+        function closeInternalNotifyConfigModal() {
+            document.getElementById('internalNotifyConfigModal').classList.add('hidden');
+        }
+
+        function renderInternalRecipientsTable() {
+            const tbody = document.getElementById('internalRecipientsTableBody');
+            if (!tbody) return;
+            const list = getInternalRecipients();
+            tbody.innerHTML = list.map(r => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                    <td class="py-2 px-3 font-bold text-gray-900 dark:text-white">${escapeHtml(r.name)}</td>
+                    <td class="py-2 px-3 font-mono text-gray-600 dark:text-gray-300">${escapeHtml(r.email)}</td>
+                    <td class="py-2 px-3 text-right whitespace-nowrap">
+                        <button type="button" onclick="editInternalRecipient('${escapeJs(r.id)}')" class="p-1 text-gray-400 hover:text-brand-600 transition" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        ${list.length > 1 ? `<button type="button" onclick="deleteInternalRecipient('${escapeJs(r.id)}')" class="p-1 text-gray-400 hover:text-red-500 transition ml-1" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function addInternalRecipient(e) {
+            e.preventDefault();
+            const nameInp = document.getElementById('newInternalRecName');
+            const emailInp = document.getElementById('newInternalRecEmail');
+            const name = nameInp.value.trim();
+            const email = emailInp.value.trim();
+            if (!name || !email) return;
+
+            const list = getInternalRecipients();
+            const newId = 'rec_' + Math.random().toString(36).substr(2, 8);
+            list.push({ id: newId, name, email });
+            saveInternalRecipients(list);
+            saveSelectedInternalRecipient(newId);
+            renderInternalRecipientSelector();
+            nameInp.value = '';
+            emailInp.value = '';
+            showToast(`Responsable ${name} añadido`);
+        }
+
+        function editInternalRecipient(id) {
+            const list = getInternalRecipients();
+            const item = list.find(r => r.id === id);
+            if (!item) return;
+            const newName = prompt('Nombre de la persona responsable:', item.name);
+            if (newName === null || !newName.trim()) return;
+            const newEmail = prompt('Correo electrónico:', item.email);
+            if (newEmail === null || !newEmail.trim()) return;
+
+            const updated = list.map(r => r.id === id ? { ...r, name: newName.trim(), email: newEmail.trim() } : r);
+            saveInternalRecipients(updated);
+            showToast('Contacto interno actualizado');
+        }
+
+        function deleteInternalRecipient(id) {
+            const list = getInternalRecipients();
+            if (list.length <= 1) return;
+            if (!confirm('¿Eliminar este contacto interno?')) return;
+            saveInternalRecipients(list.filter(r => r.id !== id));
+            showToast('Contacto interno eliminado');
+        }
+
+        function renderInternalTemplatesList() {
+            const container = document.getElementById('internalTemplatesList');
+            if (!container) return;
+            const list = getInternalNotifyTemplates();
+            container.innerHTML = list.map(t => `
+                <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600 flex items-start justify-between gap-2">
+                    <div class="min-w-0 flex-1 space-y-0.5">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 font-bold rounded text-[11px]">Botón: ${escapeHtml(t.label)}</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate">Asunto: ${escapeHtml(t.subject)}</span>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 text-[11px] whitespace-pre-line">${escapeHtml(t.body)}</p>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button type="button" onclick="editInternalTemplateItem('${escapeJs(t.id)}')" class="p-1.5 text-gray-400 hover:text-brand-600 transition" title="Editar plantilla"><i class="fa-solid fa-pen"></i></button>
+                        ${list.length > 1 ? `<button type="button" onclick="deleteInternalTemplateItem('${escapeJs(t.id)}')" class="p-1.5 text-gray-400 hover:text-red-500 transition" title="Eliminar plantilla"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openNewInternalTemplateForm() {
+            document.getElementById('editInternalTplId').value = '';
+            document.getElementById('editInternalTplLabel').value = '';
+            document.getElementById('editInternalTplSubject').value = 'Pedido {numero} ...';
+            document.getElementById('editInternalTplBody').value = 'Hola {nombre}, te informo de que el pedido/albarán {numero} ({cliente}) ...';
+            document.getElementById('internalTplEditorCard').classList.remove('hidden');
+            document.getElementById('editInternalTplLabel').focus();
+        }
+
+        function editInternalTemplateItem(id) {
+            const tpl = getInternalNotifyTemplates().find(t => t.id === id);
+            if (!tpl) return;
+            document.getElementById('editInternalTplId').value = tpl.id;
+            document.getElementById('editInternalTplLabel').value = tpl.label;
+            document.getElementById('editInternalTplSubject').value = tpl.subject;
+            document.getElementById('editInternalTplBody').value = tpl.body;
+            document.getElementById('internalTplEditorCard').classList.remove('hidden');
+            document.getElementById('editInternalTplLabel').focus();
+        }
+
+        function closeInternalTplEditorCard() {
+            const card = document.getElementById('internalTplEditorCard');
+            if (card) card.classList.add('hidden');
+        }
+
+        function saveInternalTemplateItem() {
+            const id = document.getElementById('editInternalTplId').value.trim();
+            const label = document.getElementById('editInternalTplLabel').value.trim();
+            const subject = document.getElementById('editInternalTplSubject').value.trim();
+            const body = document.getElementById('editInternalTplBody').value.trim();
+
+            if (!label || !subject || !body) {
+                showToast('Completa la etiqueta, el asunto y el texto del mensaje');
+                return;
+            }
+
+            let list = getInternalNotifyTemplates();
+            if (id) {
+                list = list.map(t => t.id === id ? { id, label, subject, body } : t);
+            } else {
+                list.push({
+                    id: 'int_custom_' + Math.random().toString(36).substr(2, 7),
+                    label,
+                    subject,
+                    body
+                });
+            }
+            saveInternalNotifyTemplates(list);
+            closeInternalTplEditorCard();
+            showToast('Plantilla de aviso guardada');
+        }
+
+        function deleteInternalTemplateItem(id) {
+            const list = getInternalNotifyTemplates();
+            if (list.length <= 1) return;
+            if (!confirm('¿Eliminar esta plantilla de aviso interno?')) return;
+            saveInternalNotifyTemplates(list.filter(t => t.id !== id));
+            showToast('Plantilla eliminada');
+        }
+
+        function applyInternalNoticeVariables(text, vars) {
+            return String(text || '')
+                .replace(/\{nombre\}/gi, vars.nombre || '')
+                .replace(/\{numero\}/gi, vars.numero || '')
+                .replace(/\{cliente\}/gi, vars.cliente || '')
+                .replace(/\{agencia\}/gi, vars.agencia || '')
+                .replace(/\{bultos\}/gi, vars.bultos || '');
+        }
+
+        async function dispatchInternalEmailDirectOrMailto(toEmail, subject, plainBody) {
+            if (typeof gmailAccessToken !== 'undefined' && gmailAccessToken && Date.now() < gmailTokenExpiresAt) {
+                const rawMime = buildRawMimeMessage({
+                    to: toEmail,
+                    cc: '',
+                    subject,
+                    plainBody,
+                    inReplyTo: null,
+                    attachments: []
+                });
+                const payload = { raw: utf8StringToBase64Url(rawMime) };
+                await gmailApiFetch('/messages/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                return 'gmail_api';
+            } else {
+                window.location.href = `mailto:${encodeURIComponent(toEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plainBody)}`;
+                return 'mailto';
+            }
+        }
+
+        async function sendInternalOrderNotice(expId, templateId, btnEl = null) {
+            const all = getExpeditionHistory();
+            const entry = all.find(e => e.id === expId);
+            if (!entry) return;
+
+            const recipient = getSelectedInternalRecipient();
+            if (!recipient) {
+                showToast('Configura primero un destinatario interno');
+                return;
+            }
+
+            const tpl = getInternalNotifyTemplates().find(t => t.id === templateId) || getInternalNotifyTemplates()[0];
+            if (!tpl) return;
+
+            const vars = {
+                nombre: recipient.name,
+                numero: entry.docNum || 'SIN_NUM',
+                cliente: entry.clientName || 'Cliente',
+                agencia: entry.transport || 'SEUR',
+                bultos: entry.bultos || '1 bulto'
+            };
+
+            const subject = applyInternalNoticeVariables(tpl.subject, vars);
+            const body = applyInternalNoticeVariables(tpl.body, vars);
+
+            const origHtml = btnEl ? btnEl.innerHTML : null;
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
+
+            try {
+                const mode = await dispatchInternalEmailDirectOrMailto(recipient.email, subject, body);
+                const nowTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const updated = all.map(item => item.id === expId ? {
+                    ...item,
+                    internalNotifiedTo: recipient.name,
+                    internalNotifiedLabel: tpl.label,
+                    internalNotifiedTime: nowTime
+                } : item);
+                saveExpeditionHistory(updated);
+
+                if (mode === 'gmail_api') {
+                    showToast(`✓ Enviado a ${recipient.name}: "${subject}"`);
+                } else {
+                    showToast(`Correo preparado para ${recipient.name} (${recipient.email})`);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('No se pudo enviar automáticamente vía Google Workspace (' + (err.message || 'error') + '). Se abrirá tu cliente de correo.');
+                window.location.href = `mailto:${encodeURIComponent(recipient.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            } finally {
+                if (btnEl && origHtml !== null) {
+                    btnEl.disabled = false;
+                    btnEl.innerHTML = origHtml;
+                }
+            }
+        }
+
+        function toggleExpeditionBatchSelect(expId) {
+            if (selectedExpeditionIds.has(expId)) {
+                selectedExpeditionIds.delete(expId);
+            } else {
+                selectedExpeditionIds.add(expId);
+            }
+            updateExpeditionBatchBar();
+        }
+
+        function toggleSelectAllVisibleExpeditions(checked) {
+            const search = (document.getElementById('expeditionSearchInput')?.value || '').toLowerCase().trim();
+            const all = getExpeditionHistory();
+            const filtered = all.filter(e =>
+                (e.docNum && e.docNum.toLowerCase().includes(search)) ||
+                (e.clientName && e.clientName.toLowerCase().includes(search)) ||
+                (e.transport && e.transport.toLowerCase().includes(search)) ||
+                (e.observaciones && e.observaciones.toLowerCase().includes(search)) ||
+                (e.date && e.date.includes(search))
+            );
+            const pageInfo = paginateSuiteList('expeditions', filtered);
+            pageInfo.visibleItems.forEach(item => {
+                if (checked) selectedExpeditionIds.add(item.id);
+                else selectedExpeditionIds.delete(item.id);
+            });
+            renderExpeditionHistory();
+        }
+
+        function clearExpeditionBatchSelection() {
+            selectedExpeditionIds.clear();
+            renderExpeditionHistory();
+        }
+
+        function updateExpeditionBatchBar() {
+            const bar = document.getElementById('expeditionBatchNotifyBar');
+            const countEl = document.getElementById('expeditionSelectedCount');
+            if (!bar || !countEl) return;
+            if (selectedExpeditionIds.size > 0) {
+                countEl.innerText = selectedExpeditionIds.size;
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        async function sendBatchInternalNotice(modeType) {
+            if (selectedExpeditionIds.size === 0) return;
+            const recipient = getSelectedInternalRecipient();
+            if (!recipient) {
+                showToast('Configura primero un destinatario interno');
+                return;
+            }
+
+            const all = getExpeditionHistory();
+            const selectedItems = all.filter(e => selectedExpeditionIds.has(e.id));
+            if (selectedItems.length === 0) return;
+
+            const isWithTransport = modeType === 'preparado_transporte';
+            const numsList = selectedItems.map(i => i.docNum).join(', ');
+            const subject = isWithTransport
+                ? `Pedidos preparados y transporte solicitado (${numsList})`
+                : `Pedidos preparados (${numsList})`;
+
+            const linesText = selectedItems.map(i => {
+                if (isWithTransport) {
+                    return `• Pedido/Albarán ${i.docNum} (${i.clientName}) — Transporte: ${i.transport} (${i.bultos || '1 bulto'})`;
+                }
+                return `• Pedido/Albarán ${i.docNum} (${i.clientName})`;
+            }).join('\n');
+
+            const body = isWithTransport
+                ? `Hola ${recipient.name}, te informo de que los siguientes pedidos/albaranes ya están preparados y su transporte está solicitado:\n\n${linesText}`
+                : `Hola ${recipient.name}, te informo de que los siguientes pedidos/albaranes ya están preparados:\n\n${linesText}`;
+
+            try {
+                const sentMode = await dispatchInternalEmailDirectOrMailto(recipient.email, subject, body);
+                const nowTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const labelShort = isWithTransport ? 'Prep. + Transp. (Lote)' : 'Preparado (Lote)';
+                const updated = all.map(item => selectedExpeditionIds.has(item.id) ? {
+                    ...item,
+                    internalNotifiedTo: recipient.name,
+                    internalNotifiedLabel: labelShort,
+                    internalNotifiedTime: nowTime
+                } : item);
+                selectedExpeditionIds.clear();
+                saveExpeditionHistory(updated);
+
+                if (sentMode === 'gmail_api') {
+                    showToast(`✓ Correo resumen de ${selectedItems.length} pedidos enviado a ${recipient.name}`);
+                } else {
+                    showToast(`Correo resumen preparado para ${recipient.name}`);
+                }
+            } catch (err) {
+                console.error(err);
+                window.location.href = `mailto:${encodeURIComponent(recipient.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            }
+        }
+
+        // --- PUENTE EN BLOQUE: EXPEDICIONES PENDIENTES -> ETIQUETAS A4 ---
+        function bridgePendingExpeditionsToLabels() {
+            const all = getExpeditionHistory();
+            const pending = all.filter(e => !e.labeled && String(e.transport || '').toLowerCase() !== 'recogida');
+
+            if (pending.length === 0) {
+                showToast('No hay expediciones pendientes de etiquetar; abriendo Etiquetas A4');
+                labelsBridgeActive = false;
+                switchTab('labels');
+                return;
+            }
+
+            // Contar agencias para activar la plantilla A4 mayoritaria (SEUR = 3 vs GLS/MRW = 4)
+            let seurCount = 0;
+            let glsMrwCount = 0;
+            pending.forEach(e => {
+                const t = String(e.transport || '').toUpperCase();
+                if (t.includes('SEUR')) seurCount++;
+                else if (t.includes('GLS') || t.includes('MRW')) glsMrwCount++;
+            });
+
+            labelsBridgeActive = true;
+            switchTab('labels');
+
+            if (labelItems.length === 0) {
+                if (glsMrwCount > seurCount) {
+                    changeLabelMode(4);
+                } else {
+                    changeLabelMode(3);
+                }
+            }
+            renderLabelsPendingBridge();
+            showToast(`${pending.length} pedido(s) pendiente(s) listos para cotejar con etiquetas`);
+        }
+
+        function renderLabelsPendingBridge() {
+            const banner = document.getElementById('labelsPendingBridgeBanner');
+            const listEl = document.getElementById('labelsPendingBridgeList');
+            const countEl = document.getElementById('labelsPendingBridgeCount');
+            if (!banner || !listEl || !countEl) return;
+
+            const pending = getExpeditionHistory().filter(e => !e.labeled && String(e.transport || '').toLowerCase() !== 'recogida');
+            if (!labelsBridgeActive || pending.length === 0) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            banner.classList.remove('hidden');
+            countEl.innerText = pending.length;
+            listEl.innerHTML = pending.map(e => `
+                <label class="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-700 rounded-xl text-xs cursor-pointer hover:border-emerald-500 transition shadow-2xs select-none" title="Marcar este pedido como etiquetado">
+                    <input type="checkbox" onchange="toggleBridgeExpeditionLabeled('${escapeJs(e.id)}')" class="w-3.5 h-3.5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500">
+                    <span class="font-mono font-bold text-brand-600 dark:text-brand-400">Alb. ${escapeHtml(e.docNum)}</span>
+                    <span class="font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[160px]">${escapeHtml(e.clientName)}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-brand-700 dark:text-brand-300 font-bold text-[10px]">${escapeHtml(e.transport)}</span>
+                    <span class="text-[11px] text-gray-500">· ${escapeHtml(e.bultos || '1 bulto')}</span>
+                </label>
+            `).join('');
+        }
+
+        function toggleBridgeExpeditionLabeled(expId) {
+            toggleExpeditionLabeled(expId);
+            renderLabelsPendingBridge();
+            showToast('Pedido marcado como etiquetado en el historial');
+        }
+
+        function markAllBridgePendingLabeled() {
+            const list = getExpeditionHistory().map(item =>
+                (!item.labeled && String(item.transport || '').toLowerCase() !== 'recogida')
+                    ? { ...item, labeled: true }
+                    : item
+            );
+            saveExpeditionHistory(list);
+            renderLabelsPendingBridge();
+            showToast('Todos los pedidos pendientes marcados como etiquetados');
+        }
+
+        function closeLabelsPendingBridge() {
+            labelsBridgeActive = false;
+            const banner = document.getElementById('labelsPendingBridgeBanner');
+            if (banner) banner.classList.add('hidden');
+        }
 
         function onExpeditionSearchInput() {
-            expeditionCurrentPage = 1;
+            resetSuiteListPage('expeditions');
             renderExpeditionHistory();
         }
 
         function changeExpeditionPageSize(val) {
-            const parsed = parseInt(val, 10);
-            expeditionPageSize = isNaN(parsed) ? 10 : parsed;
-            expeditionCurrentPage = 1;
-            renderExpeditionHistory();
+            changeSuiteListPageSize('expeditions', val);
         }
 
         function goToExpeditionPage(page) {
-            expeditionCurrentPage = Math.max(1, page);
-            renderExpeditionHistory();
+            goToSuiteListPage('expeditions', page);
         }
 
         function renderExpeditionHistory() {
@@ -11402,10 +12155,12 @@ REGLAS:
             const countBadge = document.getElementById('expeditionHistoryCount');
             if (!container) return;
 
+            renderInternalRecipientSelector();
+
             const sizeSel = document.getElementById('expeditionPageSizeSelect');
-            if (sizeSel) {
+            if (sizeSel && suitePaginationState.expeditions) {
                 const selVal = parseInt(sizeSel.value, 10);
-                if (!isNaN(selVal)) expeditionPageSize = selVal;
+                if (!isNaN(selVal)) suitePaginationState.expeditions.size = selVal;
             }
 
             const search = (document.getElementById('expeditionSearchInput')?.value || '').toLowerCase().trim();
@@ -11422,52 +12177,22 @@ REGLAS:
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="text-center py-6 text-xs text-gray-400">${search ? 'No hay expediciones que coincidan con tu búsqueda.' : 'Aún no hay expediciones registradas. Al subir presupuestos o generar cualquier Checklist aparecerán aquí automáticamente.'}</div>`;
+                updateExpeditionBatchBar();
                 return;
             }
 
-            const totalItems = filtered.length;
-            const usePagination = expeditionPageSize > 0;
-            const totalPages = usePagination ? Math.max(1, Math.ceil(totalItems / expeditionPageSize)) : 1;
-            if (expeditionCurrentPage > totalPages) expeditionCurrentPage = totalPages;
-            if (expeditionCurrentPage < 1) expeditionCurrentPage = 1;
-
-            const startIndex = usePagination ? (expeditionCurrentPage - 1) * expeditionPageSize : 0;
-            const endIndex = usePagination ? Math.min(startIndex + expeditionPageSize, totalItems) : totalItems;
-            const visibleItems = filtered.slice(startIndex, endIndex);
-
-            const paginationFooterHtml = usePagination && totalPages > 1 ? `
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 mt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
-                    <div>
-                        Mostrando <strong class="text-gray-900 dark:text-white">${startIndex + 1}–${endIndex}</strong> de <strong class="text-gray-900 dark:text-white">${totalItems}</strong> expediciones
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button type="button" onclick="goToExpeditionPage(1)" ${expeditionCurrentPage === 1 ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition" title="Primera página">
-                            <i class="fa-solid fa-angles-left"></i>
-                        </button>
-                        <button type="button" onclick="goToExpeditionPage(${expeditionCurrentPage - 1})" ${expeditionCurrentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition flex items-center gap-1">
-                            <i class="fa-solid fa-chevron-left text-[10px]"></i> Anterior
-                        </button>
-                        <span class="px-2.5 py-1 font-bold text-gray-800 dark:text-gray-200">
-                            Página ${expeditionCurrentPage} de ${totalPages}
-                        </span>
-                        <button type="button" onclick="goToExpeditionPage(${expeditionCurrentPage + 1})" ${expeditionCurrentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition flex items-center gap-1">
-                            Siguiente <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                        </button>
-                        <button type="button" onclick="goToExpeditionPage(${totalPages})" ${expeditionCurrentPage === totalPages ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition" title="Última página">
-                            <i class="fa-solid fa-angles-right"></i>
-                        </button>
-                    </div>
-                </div>
-            ` : `
-                <div class="pt-2.5 mt-2 border-t border-gray-100 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400">
-                    Mostrando <strong class="text-gray-800 dark:text-gray-200">${startIndex + 1}–${endIndex}</strong> de <strong class="text-gray-800 dark:text-gray-200">${totalItems}</strong> expediciones
-                </div>
-            `;
+            const pageInfo = paginateSuiteList('expeditions', filtered);
+            const paginationFooterHtml = buildSuitePaginationFooterHtml('expeditions', pageInfo, 'expediciones');
+            const internalTemplates = getInternalNotifyTemplates();
+            const allVisibleChecked = pageInfo.visibleItems.length > 0 && pageInfo.visibleItems.every(it => selectedExpeditionIds.has(it.id));
 
             container.innerHTML = `
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700 text-[11px] uppercase text-gray-500 dark:text-gray-400">
+                            <th class="py-2 px-1.5 text-center w-7">
+                                <input type="checkbox" ${allVisibleChecked ? 'checked' : ''} onchange="toggleSelectAllVisibleExpeditions(this.checked)" class="w-3.5 h-3.5 text-emerald-600 rounded border-gray-300 cursor-pointer" title="Seleccionar visibles para enviar aviso agrupado">
+                            </th>
                             <th class="py-2 px-2">Fecha</th>
                             <th class="py-2 px-2">Nº Alb.</th>
                             <th class="py-2 px-2">Cliente</th>
@@ -11475,28 +12200,43 @@ REGLAS:
                             <th class="py-2 px-2">Bultos</th>
                             <th class="py-2 px-2">Observaciones / Dir. Especial</th>
                             <th class="py-2 px-2 text-center">Etiquetado</th>
+                            <th class="py-2 px-2">Aviso Responsable</th>
                             <th class="py-2 px-2 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
-                        ${visibleItems.map(e => `
-                            <tr onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" title="Haz clic para visualizar e imprimir el Albarán y el Checklist" class="cursor-pointer hover:bg-blue-50/70 dark:hover:bg-gray-700/40 transition ${e.labeled ? 'opacity-75' : ''}">
+                        ${pageInfo.visibleItems.map(e => `
+                            <tr onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" title="Haz clic para visualizar e imprimir el Albarán y el Checklist" class="cursor-pointer hover:bg-blue-50/70 dark:hover:bg-gray-700/40 transition ${e.labeled ? 'opacity-80' : ''}">
+                                <td class="py-2 px-1.5 text-center" onclick="event.stopPropagation()">
+                                    <input type="checkbox" ${selectedExpeditionIds.has(e.id) ? 'checked' : ''} onchange="toggleExpeditionBatchSelect('${escapeJs(e.id)}')" class="w-3.5 h-3.5 text-emerald-600 rounded border-gray-300 cursor-pointer" title="Seleccionar para aviso agrupado">
+                                </td>
                                 <td class="py-2 px-2 whitespace-nowrap text-gray-500 dark:text-gray-400">${escapeHtml(e.date)} <span class="text-[10px]">${escapeHtml(e.time || '')}</span></td>
                                 <td class="py-2 px-2 font-mono font-bold text-brand-600 dark:text-brand-400 whitespace-nowrap underline decoration-dotted">${escapeHtml(e.docNum)}</td>
-                                <td class="py-2 px-2 font-semibold text-gray-900 dark:text-white max-w-[180px] truncate" title="${escapeHtml(e.clientRaw)}">${escapeHtml(e.clientName)}</td>
+                                <td class="py-2 px-2 font-semibold text-gray-900 dark:text-white max-w-[160px] truncate" title="${escapeHtml(e.clientRaw)}">${escapeHtml(e.clientName)}</td>
                                 <td class="py-2 px-2 whitespace-nowrap">
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/40 text-brand-700 dark:text-brand-300 border border-blue-200 dark:border-blue-800">${escapeHtml(e.transport)}</span>
                                 </td>
                                 <td class="py-2 px-2 whitespace-nowrap text-gray-600 dark:text-gray-300">${escapeHtml(e.bultos)}</td>
-                                <td class="py-2 px-2 max-w-[200px] truncate text-gray-500 dark:text-gray-400" title="${escapeHtml(e.observaciones)}">${e.observaciones ? escapeHtml(e.observaciones) : '<span class="italic text-gray-300 dark:text-gray-600">—</span>'}</td>
+                                <td class="py-2 px-2 max-w-[170px] truncate text-gray-500 dark:text-gray-400" title="${escapeHtml(e.observaciones)}">${e.observaciones ? escapeHtml(e.observaciones) : '<span class="italic text-gray-300 dark:text-gray-600">—</span>'}</td>
                                 <td class="py-2 px-2 text-center" onclick="event.stopPropagation()">
                                     <input type="checkbox" ${e.labeled ? 'checked' : ''} onchange="toggleExpeditionLabeled('${escapeJs(e.id)}')" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer" title="Marcar cuando la etiqueta de transporte esté pegada">
                                 </td>
+                                <td class="py-2 px-2 whitespace-nowrap" onclick="event.stopPropagation()">
+                                    <div class="flex flex-wrap items-center gap-1">
+                                        ${internalTemplates.map((tpl, tIdx) => `
+                                            <button type="button" onclick="sendInternalOrderNotice('${escapeJs(e.id)}', '${escapeJs(tpl.id)}', this)" class="px-2 py-1 rounded-md text-[10px] font-bold transition flex items-center gap-1 ${tIdx === 0 ? 'bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-700' : (tIdx === 1 ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700' : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700')}" title="${escapeHtml(tpl.subject)}">
+                                                <i class="fa-solid fa-paper-plane text-[9px]"></i>
+                                                <span>${escapeHtml(tpl.label)}</span>
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    ${e.internalNotifiedTo ? `<div class="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5"><i class="fa-solid fa-check-double mr-0.5"></i>${escapeHtml(e.internalNotifiedTo)}: ${escapeHtml(e.internalNotifiedLabel || '')} (${escapeHtml(e.internalNotifiedTime || '')})</div>` : ''}
+                                </td>
                                 <td class="py-2 px-2 text-right whitespace-nowrap" onclick="event.stopPropagation()">
                                     <button type="button" onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" class="px-2 py-1 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1 mr-1" title="Ver visualmente e imprimir Albarán y Checklist">
-                                        <i class="fa-solid fa-eye"></i> <span>Ver / Imprimir</span>
+                                        <i class="fa-solid fa-eye"></i> <span>Ver</span>
                                     </button>
-                                    <button type="button" onclick="openQuickMessageFromExpedition('${escapeJs(e.id)}')" class="p-1 text-emerald-600 hover:text-emerald-700 transition" title="Preparar mensaje rápido de envío (Email / WhatsApp)">
+                                    <button type="button" onclick="openQuickMessageFromExpedition('${escapeJs(e.id)}')" class="p-1 text-emerald-600 hover:text-emerald-700 transition" title="Abrir editor de mensajes rápidos (Email / WhatsApp)">
                                         <i class="fa-solid fa-comment-dots"></i>
                                     </button>
                                     <button type="button" onclick="copyExpeditionShippingSummary('${escapeJs(e.id)}')" class="p-1 text-gray-400 hover:text-brand-600 transition ml-1" title="Copiar datos de envío del cliente">
@@ -11512,6 +12252,7 @@ REGLAS:
                 </table>
                 ${paginationFooterHtml}
             `;
+            updateExpeditionBatchBar();
         }
     
 
