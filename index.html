@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v45 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v47 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -547,10 +547,10 @@
                 <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-1 max-w-xl">
                     <div class="relative w-full sm:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
-                        <input type="text" id="contactSearch" oninput="renderContacts()" placeholder="Buscar por nombre, tlf, empresa..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <input type="text" id="contactSearch" oninput="resetSuiteListPage('contacts'); renderContacts()" placeholder="Buscar por nombre, tlf, empresa..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                     </div>
                     <div class="w-full sm:w-48">
-                        <select id="contactCategoryFilter" onchange="renderContacts()" class="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <select id="contactCategoryFilter" onchange="resetSuiteListPage('contacts'); renderContacts()" class="w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                             <option value="ALL">Todas las Categorías</option>
                             <option value="Clientes">Clientes</option>
                             <option value="Proveedores">Proveedores</option>
@@ -578,14 +578,24 @@
                 </div>
             </div>
 
-            <!-- Contador y listado de contactos -->
-            <div class="flex justify-between items-center px-1">
+            <!-- Contador, selector de página y listado de contactos -->
+            <div class="flex flex-wrap justify-between items-center gap-2 px-1">
                 <span class="text-xs text-gray-500 dark:text-gray-400 font-semibold">
-                    Mostrando <span id="contactsCount" class="font-bold text-brand-600 dark:text-brand-400">0</span> contacto(s)
+                    Total: <span id="contactsCount" class="font-bold text-brand-600 dark:text-brand-400">0</span> contacto(s)
                 </span>
+                <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                    <label for="contactsPageSizeSelect" class="font-semibold">Mostrar:</label>
+                    <select id="contactsPageSizeSelect" onchange="changeSuiteListPageSize('contacts', this.value)" class="py-1 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                        <option value="12" selected>12</option>
+                        <option value="24">24</option>
+                        <option value="48">48</option>
+                        <option value="0">Todos</option>
+                    </select>
+                </div>
             </div>
 
             <div id="contactsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            <div id="contactsPaginationFooter"></div>
         </div>
 
         <!-- SECCIÓN 1: ACCESO A PLATAFORMAS -->
@@ -700,10 +710,19 @@
                         </h3>
                         <p class="text-[11px] text-gray-400">Consulta rápida de pedidos preparados, agencia elegida, bultos y control de etiqueta pegada</p>
                     </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                            <label for="expeditionPageSizeSelect" class="font-semibold whitespace-nowrap">Mostrar:</label>
+                            <select id="expeditionPageSizeSelect" onchange="changeExpeditionPageSize(this.value)" class="py-1.5 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="0">Todos</option>
+                            </select>
+                        </div>
                         <div class="relative flex-1 sm:w-56">
                             <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-gray-400 text-xs"></i>
-                            <input type="text" id="expeditionSearchInput" oninput="renderExpeditionHistory()" placeholder="Buscar albarán, cliente, agencia..." class="w-full pl-8 pr-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <input type="text" id="expeditionSearchInput" oninput="onExpeditionSearchInput()" placeholder="Buscar albarán, cliente, agencia..." class="w-full pl-8 pr-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
                         </div>
                         <button type="button" onclick="clearExpeditionHistory()" class="px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg font-semibold transition" title="Limpiar historial antiguo">
                             <i class="fa-solid fa-trash-can"></i>
@@ -1512,7 +1531,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div class="relative w-full sm:w-64">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
-                    <input type="text" id="noteSearch" oninput="renderNotes()" placeholder="Buscar nota o recordatorio..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    <input type="text" id="noteSearch" oninput="resetSuiteListPage('notes'); renderNotes()" placeholder="Buscar nota o recordatorio..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                 </div>
                 <div class="flex items-center space-x-2 w-full sm:w-auto justify-end flex-wrap gap-y-2">
                     <button onclick="exportNotes()" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-1.5" title="Exportar copia de seguridad de notas">
@@ -1530,12 +1549,24 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1 space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
-                        <span><i class="fa-solid fa-grip-vertical mr-1 text-gray-400"></i> Anotaciones Pendientes</span>
-                        <span id="notesCountBadge" class="text-xs bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded-full font-bold">0</span>
-                    </h3>
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                            <span><i class="fa-solid fa-grip-vertical mr-1 text-gray-400"></i> Anotaciones</span>
+                            <span id="notesCountBadge" class="text-xs bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 px-2 py-0.5 rounded-full font-bold">0</span>
+                        </h3>
+                        <div class="flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300">
+                            <label for="notesPageSizeSelect" class="font-semibold">Ver:</label>
+                            <select id="notesPageSizeSelect" onchange="changeSuiteListPageSize('notes', this.value)" class="py-1 px-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-[11px] focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="0">Todas</option>
+                            </select>
+                        </div>
+                    </div>
 
                     <div id="notesBoard" class="space-y-3 min-h-[400px] p-2 bg-gray-100/60 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700"></div>
+                    <div id="notesPaginationFooter"></div>
                 </div>
 
                 <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -1586,9 +1617,20 @@
 
                 <!-- Barra de búsqueda y respaldo -->
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                    <div class="relative w-full sm:w-72">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
-                        <input type="text" id="arborParteSearch" oninput="renderArborPartes()" placeholder="Buscar por Nº parte, cliente, equipo..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto flex-1">
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
+                            <input type="text" id="arborParteSearch" oninput="resetSuiteListPage('arborPartes'); renderArborPartes()" placeholder="Buscar por Nº parte, cliente, equipo..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        </div>
+                        <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                            <label for="arborPartesPageSizeSelect" class="font-semibold">Mostrar:</label>
+                            <select id="arborPartesPageSizeSelect" onchange="changeSuiteListPageSize('arborPartes', this.value)" class="py-1.5 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="0">Todos</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
                         <button type="button" onclick="exportAllPartesJSON()" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-1.5">
@@ -1603,6 +1645,7 @@
 
                 <!-- Listado de Partes ArborSystems -->
                 <div id="arborPartesList" class="space-y-3"></div>
+                <div id="arborPartesPaginationFooter"></div>
             </div>
 
             <!-- SUB-VISTA 3: CATÁLOGO EDITABLE DE PIEZAS ARBORSYSTEMS -->
@@ -1625,7 +1668,17 @@
                         </button>
                     </form>
 
+                    <div class="flex items-center justify-end gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                        <label for="arborPiecesPageSizeSelect" class="font-semibold">Mostrar:</label>
+                        <select id="arborPiecesPageSizeSelect" onchange="changeSuiteListPageSize('arborPieces', this.value)" class="py-1 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                            <option value="15" selected>15</option>
+                            <option value="30">30</option>
+                            <option value="50">50</option>
+                            <option value="0">Todas</option>
+                        </select>
+                    </div>
                     <div id="arborPiecesCatalogList" class="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"></div>
+                    <div id="arborPiecesPaginationFooter"></div>
                 </div>
             </div>
 
@@ -1657,9 +1710,9 @@
                     <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto flex-1">
                         <div class="relative w-full sm:w-64">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400 text-sm"></i>
-                            <input type="text" id="maqParteSearch" oninput="renderMaqPartes()" placeholder="Buscar parte, máquina, operario..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                            <input type="text" id="maqParteSearch" oninput="resetSuiteListPage('maqPartes'); renderMaqPartes()" placeholder="Buscar parte, máquina, operario..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                         </div>
-                        <select id="maqParteStatusFilter" onchange="renderMaqPartes()" class="w-full sm:w-48 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <select id="maqParteStatusFilter" onchange="resetSuiteListPage('maqPartes'); renderMaqPartes()" class="w-full sm:w-48 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                             <option value="ALL">Todos los estados</option>
                             <option value="Pendiente">Pendiente / En taller</option>
                             <option value="Reparada">Reparada</option>
@@ -1677,7 +1730,17 @@
                     </div>
                 </div>
 
+                <div class="flex items-center justify-end gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                    <label for="maqPartesPageSizeSelect" class="font-semibold">Mostrar:</label>
+                    <select id="maqPartesPageSizeSelect" onchange="changeSuiteListPageSize('maqPartes', this.value)" class="py-1 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="0">Todos</option>
+                    </select>
+                </div>
                 <div id="maqPartesList" class="space-y-3"></div>
+                <div id="maqPartesPaginationFooter"></div>
             </div>
 
             <!-- SUB-VISTA 4: CATÁLOGO EDITABLE DE MAQUINARIA INTERNA Y VENCIMIENTOS -->
@@ -1728,7 +1791,17 @@
                         </div>
                     </form>
 
+                    <div class="flex items-center justify-end gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                        <label for="maqCatalogPageSizeSelect" class="font-semibold">Mostrar:</label>
+                        <select id="maqCatalogPageSizeSelect" onchange="changeSuiteListPageSize('maqCatalog', this.value)" class="py-1 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                            <option value="10" selected>10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="0">Todos</option>
+                        </select>
+                    </div>
                     <div id="maqCatalogList" class="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"></div>
+                    <div id="maqCatalogPaginationFooter"></div>
                 </div>
             </div>
         </div>
@@ -3768,8 +3841,10 @@
             });
 
             countLabel.textContent = filtered.length;
+            const footerEl = document.getElementById('contactsPaginationFooter');
 
             if (filtered.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
                 container.innerHTML = `
                     <div class="col-span-full text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
                         <i class="fa-solid fa-address-book text-gray-300 dark:text-gray-600 text-4xl mb-3"></i>
@@ -3782,7 +3857,10 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(c => `
+            const pageInfo = paginateSuiteList('contacts', filtered);
+            if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('contacts', pageInfo, 'contactos');
+
+            container.innerHTML = pageInfo.visibleItems.map(c => `
                 <div class="contact-card bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-md transition flex flex-col justify-between space-y-4">
                     <div>
                         <div class="flex justify-between items-start gap-2">
@@ -8250,8 +8328,10 @@ REGLAS:
             );
 
             badge.textContent = filteredNotes.length;
+            const footerEl = document.getElementById('notesPaginationFooter');
 
             if (filteredNotes.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
                 board.innerHTML = `
                     <div class="text-center py-10 text-gray-400 dark:text-gray-500">
                         <i class="fa-regular fa-note-sticky text-3xl mb-2"></i>
@@ -8262,7 +8342,10 @@ REGLAS:
             }
 
             const isSearching = search.length > 0;
-            board.innerHTML = filteredNotes.map(n => {
+            const pageInfo = paginateSuiteList('notes', filteredNotes);
+            if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('notes', pageInfo, 'anotaciones');
+
+            board.innerHTML = pageInfo.visibleItems.map(n => {
                 const dateText = n.datetime ? n.datetime.replace('T', ' a las ') : (n.date || '');
                 return `
                     <div draggable="${!isSearching}" data-id="${n.id}" class="note-card ${getColorClasses(n.color)} bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm ${!isSearching ? 'cursor-grab active:cursor-grabbing' : ''} hover:shadow-md transition group">
@@ -11198,10 +11281,132 @@ REGLAS:
             openChecklistModal(liveItem.id);
         }
 
+        // --- PAGINACIÓN REUTILIZABLE PARA LISTADOS DE LA SUITE ---
+        const suitePaginationState = {
+            expeditions: { page: 1, size: 10 },
+            contacts: { page: 1, size: 12 },
+            arborPartes: { page: 1, size: 10 },
+            arborPieces: { page: 1, size: 15 },
+            maqPartes: { page: 1, size: 10 },
+            maqCatalog: { page: 1, size: 10 },
+            notes: { page: 1, size: 10 }
+        };
+
+        function paginateSuiteList(key, items) {
+            const st = suitePaginationState[key] || { page: 1, size: 10 };
+            const totalItems = items.length;
+            const usePagination = st.size > 0;
+            const totalPages = usePagination ? Math.max(1, Math.ceil(totalItems / st.size)) : 1;
+            if (st.page > totalPages) st.page = totalPages;
+            if (st.page < 1) st.page = 1;
+            const startIndex = usePagination ? (st.page - 1) * st.size : 0;
+            const endIndex = usePagination ? Math.min(startIndex + st.size, totalItems) : totalItems;
+            return {
+                visibleItems: items.slice(startIndex, endIndex),
+                startIndex,
+                endIndex,
+                totalItems,
+                totalPages,
+                currentPage: st.page,
+                usePagination
+            };
+        }
+
+        function buildSuitePaginationFooterHtml(key, pageInfo, itemLabel = 'registros') {
+            const { startIndex, endIndex, totalItems, totalPages, currentPage, usePagination } = pageInfo;
+            if (usePagination && totalPages > 1) {
+                return `
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 mt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                        <div>
+                            Mostrando <strong class="text-gray-900 dark:text-white">${startIndex + 1}–${endIndex}</strong> de <strong class="text-gray-900 dark:text-white">${totalItems}</strong> ${escapeHtml(itemLabel)}
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="goToSuiteListPage('${key}', 1)" ${currentPage === 1 ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition" title="Primera página">
+                                <i class="fa-solid fa-angles-left"></i>
+                            </button>
+                            <button type="button" onclick="goToSuiteListPage('${key}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition flex items-center gap-1">
+                                <i class="fa-solid fa-chevron-left text-[10px]"></i> Anterior
+                            </button>
+                            <span class="px-2.5 py-1 font-bold text-gray-800 dark:text-gray-200">
+                                Página ${currentPage} de ${totalPages}
+                            </span>
+                            <button type="button" onclick="goToSuiteListPage('${key}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition flex items-center gap-1">
+                                Siguiente <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                            <button type="button" onclick="goToSuiteListPage('${key}', ${totalPages})" ${currentPage === totalPages ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition" title="Última página">
+                                <i class="fa-solid fa-angles-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            return `
+                <div class="pt-2.5 mt-2 border-t border-gray-100 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400">
+                    Mostrando <strong class="text-gray-800 dark:text-gray-200">${startIndex + 1}–${endIndex}</strong> de <strong class="text-gray-800 dark:text-gray-200">${totalItems}</strong> ${escapeHtml(itemLabel)}
+                </div>
+            `;
+        }
+
+        function refreshSuiteListByKey(key) {
+            switch (key) {
+                case 'expeditions': renderExpeditionHistory(); break;
+                case 'contacts': renderContacts(); break;
+                case 'arborPartes': renderArborPartes(); break;
+                case 'arborPieces': renderArborPiecesCatalog(); break;
+                case 'maqPartes': renderMaqPartes(); break;
+                case 'maqCatalog': renderMaqCatalog(); break;
+                case 'notes': renderNotes(); break;
+            }
+        }
+
+        function changeSuiteListPageSize(key, val) {
+            const parsed = parseInt(val, 10);
+            if (!suitePaginationState[key]) suitePaginationState[key] = { page: 1, size: 10 };
+            suitePaginationState[key].size = isNaN(parsed) ? 10 : parsed;
+            suitePaginationState[key].page = 1;
+            refreshSuiteListByKey(key);
+        }
+
+        function goToSuiteListPage(key, page) {
+            if (!suitePaginationState[key]) suitePaginationState[key] = { page: 1, size: 10 };
+            suitePaginationState[key].page = Math.max(1, page);
+            refreshSuiteListByKey(key);
+        }
+
+        function resetSuiteListPage(key) {
+            if (suitePaginationState[key]) suitePaginationState[key].page = 1;
+        }
+
+        let expeditionCurrentPage = 1;
+        let expeditionPageSize = 10;
+
+        function onExpeditionSearchInput() {
+            expeditionCurrentPage = 1;
+            renderExpeditionHistory();
+        }
+
+        function changeExpeditionPageSize(val) {
+            const parsed = parseInt(val, 10);
+            expeditionPageSize = isNaN(parsed) ? 10 : parsed;
+            expeditionCurrentPage = 1;
+            renderExpeditionHistory();
+        }
+
+        function goToExpeditionPage(page) {
+            expeditionCurrentPage = Math.max(1, page);
+            renderExpeditionHistory();
+        }
+
         function renderExpeditionHistory() {
             const container = document.getElementById('expeditionHistoryContainer');
             const countBadge = document.getElementById('expeditionHistoryCount');
             if (!container) return;
+
+            const sizeSel = document.getElementById('expeditionPageSizeSelect');
+            if (sizeSel) {
+                const selVal = parseInt(sizeSel.value, 10);
+                if (!isNaN(selVal)) expeditionPageSize = selVal;
+            }
 
             const search = (document.getElementById('expeditionSearchInput')?.value || '').toLowerCase().trim();
             const all = getExpeditionHistory();
@@ -11220,6 +11425,45 @@ REGLAS:
                 return;
             }
 
+            const totalItems = filtered.length;
+            const usePagination = expeditionPageSize > 0;
+            const totalPages = usePagination ? Math.max(1, Math.ceil(totalItems / expeditionPageSize)) : 1;
+            if (expeditionCurrentPage > totalPages) expeditionCurrentPage = totalPages;
+            if (expeditionCurrentPage < 1) expeditionCurrentPage = 1;
+
+            const startIndex = usePagination ? (expeditionCurrentPage - 1) * expeditionPageSize : 0;
+            const endIndex = usePagination ? Math.min(startIndex + expeditionPageSize, totalItems) : totalItems;
+            const visibleItems = filtered.slice(startIndex, endIndex);
+
+            const paginationFooterHtml = usePagination && totalPages > 1 ? `
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 mt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                    <div>
+                        Mostrando <strong class="text-gray-900 dark:text-white">${startIndex + 1}–${endIndex}</strong> de <strong class="text-gray-900 dark:text-white">${totalItems}</strong> expediciones
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="goToExpeditionPage(1)" ${expeditionCurrentPage === 1 ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition" title="Primera página">
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                        <button type="button" onclick="goToExpeditionPage(${expeditionCurrentPage - 1})" ${expeditionCurrentPage === 1 ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition flex items-center gap-1">
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i> Anterior
+                        </button>
+                        <span class="px-2.5 py-1 font-bold text-gray-800 dark:text-gray-200">
+                            Página ${expeditionCurrentPage} de ${totalPages}
+                        </span>
+                        <button type="button" onclick="goToExpeditionPage(${expeditionCurrentPage + 1})" ${expeditionCurrentPage === totalPages ? 'disabled' : ''} class="px-2.5 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition flex items-center gap-1">
+                            Siguiente <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                        <button type="button" onclick="goToExpeditionPage(${totalPages})" ${expeditionCurrentPage === totalPages ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition" title="Última página">
+                            <i class="fa-solid fa-angles-right"></i>
+                        </button>
+                    </div>
+                </div>
+            ` : `
+                <div class="pt-2.5 mt-2 border-t border-gray-100 dark:border-gray-700 text-[11px] text-gray-500 dark:text-gray-400">
+                    Mostrando <strong class="text-gray-800 dark:text-gray-200">${startIndex + 1}–${endIndex}</strong> de <strong class="text-gray-800 dark:text-gray-200">${totalItems}</strong> expediciones
+                </div>
+            `;
+
             container.innerHTML = `
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
@@ -11235,7 +11479,7 @@ REGLAS:
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
-                        ${filtered.map(e => `
+                        ${visibleItems.map(e => `
                             <tr onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" title="Haz clic para visualizar e imprimir el Albarán y el Checklist" class="cursor-pointer hover:bg-blue-50/70 dark:hover:bg-gray-700/40 transition ${e.labeled ? 'opacity-75' : ''}">
                                 <td class="py-2 px-2 whitespace-nowrap text-gray-500 dark:text-gray-400">${escapeHtml(e.date)} <span class="text-[10px]">${escapeHtml(e.time || '')}</span></td>
                                 <td class="py-2 px-2 font-mono font-bold text-brand-600 dark:text-brand-400 whitespace-nowrap underline decoration-dotted">${escapeHtml(e.docNum)}</td>
@@ -11266,6 +11510,7 @@ REGLAS:
                         `).join('')}
                     </tbody>
                 </table>
+                ${paginationFooterHtml}
             `;
         }
     
@@ -11409,24 +11654,32 @@ REGLAS:
 
         function renderArborPiecesCatalog() {
             const container = document.getElementById('arborPiecesCatalogList');
+            const footerEl = document.getElementById('arborPiecesPaginationFooter');
             if (!container) return;
             const list = getArborPiecesCatalog();
             if (list.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
                 container.innerHTML = '<div class="p-6 text-center text-xs text-gray-400">No hay piezas registradas en el catálogo.</div>';
                 return;
             }
-            container.innerHTML = list.map((piece, idx) => `
-                <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-xs">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="font-mono font-bold text-gray-400 w-6 text-right">${idx + 1}.</span>
-                        <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">${escapeHtml(piece)}</span>
+            const pageInfo = paginateSuiteList('arborPieces', list);
+            if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('arborPieces', pageInfo, 'piezas');
+
+            container.innerHTML = pageInfo.visibleItems.map((piece, localIdx) => {
+                const realIdx = pageInfo.startIndex + localIdx;
+                return `
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/40 text-xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="font-mono font-bold text-gray-400 w-6 text-right">${realIdx + 1}.</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200 truncate">${escapeHtml(piece)}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button type="button" onclick="editArborPieceCatalog(${realIdx})" class="p-1.5 text-gray-400 hover:text-brand-600 transition" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                            <button type="button" onclick="deleteArborPieceCatalog(${realIdx})" class="p-1.5 text-gray-400 hover:text-red-500 transition" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <button type="button" onclick="editArborPieceCatalog(${idx})" class="p-1.5 text-gray-400 hover:text-brand-600 transition" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                        <button type="button" onclick="deleteArborPieceCatalog(${idx})" class="p-1.5 text-gray-400 hover:text-red-500 transition" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function getMaqCatalog() {
@@ -11598,11 +11851,16 @@ REGLAS:
                 `;
             }
 
+            const footerEl = document.getElementById('maqCatalogPaginationFooter');
             if (list.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
                 container.innerHTML = '<div class="p-6 text-center text-xs text-gray-400">No hay máquinas dadas de alta todavía. Añade arriba el Nº interno/serie y modelo de vuestras máquinas.</div>';
                 return;
             }
-            container.innerHTML = list.map(m => {
+            const pageInfo = paginateSuiteList('maqCatalog', list);
+            if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('maqCatalog', pageInfo, 'máquinas / vehículos');
+
+            container.innerHTML = pageInfo.visibleItems.map(m => {
                 const badges = [
                     getExpiryStatusInfo(m.itvDate, 'ITV'),
                     getExpiryStatusInfo(m.insuranceDate, 'Seguro'),
@@ -11902,7 +12160,9 @@ REGLAS:
                 (p.tecnico && p.tecnico.toLowerCase().includes(search))
             );
 
+            const footerEl = document.getElementById('arborPartesPaginationFooter');
             if (list.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
                 container.innerHTML = `
                     <div class="text-center py-10 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs text-gray-400">
                         <i class="fa-solid fa-folder-open text-3xl mb-2 text-gray-300 dark:text-gray-600"></i>
@@ -11912,7 +12172,10 @@ REGLAS:
                 return;
             }
 
-            container.innerHTML = list.map(p => {
+            const pageInfo = paginateSuiteList('arborPartes', list);
+            if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('arborPartes', pageInfo, 'partes');
+
+            container.innerHTML = pageInfo.visibleItems.map(p => {
                 const isCompleted = Boolean(p.tecnico || p.fechaRep || p.descRep);
                 const piecesCount = Object.keys(p.usedPieces || {}).filter(k => p.usedPieces[k]).length;
                 return `
@@ -12658,7 +12921,9 @@ REGLAS:
                 return matchStatus && matchSearch;
             });
 
+            const footerEl = document.getElementById('maqPartesPaginationFooter');
             if (list.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
                 container.innerHTML = `
                     <div class="text-center py-10 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs text-gray-400">
                         <i class="fa-solid fa-tractor text-3xl mb-2 text-gray-300 dark:text-gray-600"></i>
@@ -12671,7 +12936,10 @@ REGLAS:
                 return;
             }
 
-            container.innerHTML = list.map(p => {
+            const pageInfo = paginateSuiteList('maqPartes', list);
+            if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('maqPartes', pageInfo, 'partes');
+
+            container.innerHTML = pageInfo.visibleItems.map(p => {
                 let statusBadge = '<span class="px-2.5 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[11px] font-bold rounded-full">Pendiente / En taller</span>';
                 if (p.reparada) {
                     statusBadge = '<span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-[11px] font-bold rounded-full"><i class="fa-solid fa-check mr-1"></i>Reparada</span>';
