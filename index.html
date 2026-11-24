@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v50 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v51 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -749,12 +749,7 @@
 
                     <div id="expeditionBatchNotifyBar" class="hidden flex flex-wrap items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 shadow-2xs">
                         <span class="font-bold text-emerald-700 dark:text-emerald-300"><span id="expeditionSelectedCount">0</span> seleccionado(s):</span>
-                        <button type="button" onclick="sendBatchInternalNotice('preparado')" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-md font-bold text-[11px] transition flex items-center gap-1" title="Enviar un único correo resumen indicando que estos pedidos están preparados">
-                            <i class="fa-solid fa-box-open"></i> Avisar lote (Preparados)
-                        </button>
-                        <button type="button" onclick="sendBatchInternalNotice('preparado_transporte')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-[11px] transition flex items-center gap-1" title="Enviar un único correo resumen indicando que están preparados y con transporte solicitado">
-                            <i class="fa-solid fa-truck-fast"></i> Avisar lote (Prep. + Transp.)
-                        </button>
+                        <div id="expeditionBatchButtonsContainer" class="flex flex-wrap items-center gap-1.5"></div>
                         <button type="button" onclick="clearExpeditionBatchSelection()" class="text-gray-400 hover:text-gray-600 px-1" title="Deseleccionar todos">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
@@ -3152,6 +3147,53 @@
                 <div id="internalTemplatesList" class="space-y-2"></div>
             </div>
 
+            <!-- Bloque 3: Plantillas editables de aviso agrupado en lote (Varios pedidos a la vez) -->
+            <div class="space-y-3 text-xs pt-3 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h4 class="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group text-sky-600"></i>
+                        <span>Plantillas de Aviso en Lote (Varios pedidos simultáneos):</span>
+                    </h4>
+                    <button type="button" onclick="openNewInternalBatchTemplateForm()" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[11px] font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Nueva plantilla de lote
+                    </button>
+                </div>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                    Variables globales: <code class="text-brand-600 font-bold">{nombre}</code> (responsable), <code class="text-brand-600 font-bold">{numeros}</code> (números separados por comas), <code class="text-brand-600 font-bold">{lista}</code> (listado de pedidos). Variables por línea: <code class="text-brand-600 font-bold">{numero}</code>, <code class="text-brand-600 font-bold">{cliente}</code>, <code class="text-brand-600 font-bold">{agencia}</code>, <code class="text-brand-600 font-bold">{bultos}</code>.
+                </p>
+
+                <!-- Formulario para crear/editar plantilla de lote -->
+                <div id="internalBatchTplEditorCard" class="hidden bg-sky-50/70 dark:bg-sky-900/20 p-3.5 rounded-xl border border-sky-200 dark:border-sky-800 space-y-2.5">
+                    <input type="hidden" id="editInternalBatchTplId">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Etiqueta del botón *</label>
+                            <input type="text" id="editInternalBatchTplLabel" placeholder="Ej: Avisar lote (Preparados)" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Asunto del correo *</label>
+                            <input type="text" id="editInternalBatchTplSubject" placeholder="Ej: Pedidos preparados ({numeros})" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs font-semibold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Formato de cada línea de pedido (en <code class="text-brand-600">{lista}</code>) *</label>
+                        <input type="text" id="editInternalBatchTplLine" placeholder="Ej: • Pedido/Albarán {numero} ({cliente})" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Cuerpo del mensaje *</label>
+                        <textarea id="editInternalBatchTplBody" rows="3" placeholder="Hola {nombre}, te informo de que los siguientes pedidos/albaranes ya están preparados:
+
+{lista}" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="closeInternalBatchTplEditorCard()" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold">Cancelar</button>
+                        <button type="button" onclick="saveInternalBatchTemplateItem()" class="px-3.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-bold">Guardar Plantilla de Lote</button>
+                    </div>
+                </div>
+
+                <div id="internalBatchTemplatesList" class="space-y-2"></div>
+            </div>
+
             <div class="flex justify-end pt-2 border-t border-gray-100 dark:border-gray-700">
                 <button type="button" onclick="closeInternalNotifyConfigModal()" class="px-4 py-2 bg-gray-900 hover:bg-black dark:bg-brand-600 dark:hover:bg-brand-700 text-white rounded-xl text-xs font-bold">Listo</button>
             </div>
@@ -3423,6 +3465,9 @@
                     maqCatalog: getMaqCatalog(),
                     expeditionHistory: getExpeditionHistory(),
                     quickMessages: getQuickMessageTemplates(),
+                    internalRecipients: getInternalRecipients(),
+                    internalNotifyTemplates: getInternalNotifyTemplates(),
+                    internalBatchNotifyTemplates: getInternalBatchNotifyTemplates(),
                     homeModulesOrder: JSON.parse(localStorage.getItem('solivent_home_order') || 'null'),
                     geminiApiKey: includeSecrets ? (localStorage.getItem('solivent_gemini_api_key') || '') : '',
                     gmailClientId: localStorage.getItem('solivent_gmail_client_id') || '905848196987-si2ial3ojss3is4cb67uu9d15pj8a0go.apps.googleusercontent.com'
@@ -3798,6 +3843,9 @@
                         if (Array.isArray(d.maqCatalog)) localStorage.setItem('solivent_maquinaria_cat', JSON.stringify(d.maqCatalog));
                         if (Array.isArray(d.expeditionHistory)) localStorage.setItem('solivent_expeditions', JSON.stringify(d.expeditionHistory));
                         if (Array.isArray(d.quickMessages)) localStorage.setItem('solivent_quick_messages', JSON.stringify(d.quickMessages));
+                        if (Array.isArray(d.internalRecipients)) localStorage.setItem('solivent_internal_recipients', JSON.stringify(d.internalRecipients));
+                        if (Array.isArray(d.internalNotifyTemplates)) localStorage.setItem('solivent_internal_notify_templates', JSON.stringify(d.internalNotifyTemplates));
+                        if (Array.isArray(d.internalBatchNotifyTemplates)) localStorage.setItem('solivent_internal_batch_templates', JSON.stringify(d.internalBatchNotifyTemplates));
                         if (Array.isArray(d.homeModulesOrder)) localStorage.setItem('solivent_home_order', JSON.stringify(d.homeModulesOrder));
                         if (typeof d.geminiApiKey === 'string' && d.geminiApiKey.trim()) {
                             localStorage.setItem('solivent_gemini_api_key', d.geminiApiKey.trim());
@@ -11698,6 +11746,129 @@ REGLAS:
             }
         ];
 
+        const DEFAULT_INTERNAL_BATCH_TEMPLATES = [
+            {
+                id: 'batch_preparado',
+                label: 'Avisar lote (Preparados)',
+                subject: 'Pedidos preparados ({numeros})',
+                lineFormat: '• Pedido/Albarán {numero} ({cliente})',
+                body: 'Hola {nombre}, te informo de que los siguientes pedidos/albaranes ya están preparados:\n\n{lista}'
+            },
+            {
+                id: 'batch_prep_transporte',
+                label: 'Avisar lote (Prep. + Transp.)',
+                subject: 'Pedidos preparados y transporte solicitado ({numeros})',
+                lineFormat: '• Pedido/Albarán {numero} ({cliente}) — Transporte: {agencia} ({bultos})',
+                body: 'Hola {nombre}, te informo de que los siguientes pedidos/albaranes ya están preparados y su transporte está solicitado:\n\n{lista}'
+            }
+        ];
+
+        function getInternalBatchNotifyTemplates() {
+            try {
+                const raw = localStorage.getItem('solivent_internal_batch_templates');
+                if (!raw) {
+                    localStorage.setItem('solivent_internal_batch_templates', JSON.stringify(DEFAULT_INTERNAL_BATCH_TEMPLATES));
+                    return DEFAULT_INTERNAL_BATCH_TEMPLATES;
+                }
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_INTERNAL_BATCH_TEMPLATES;
+            } catch (e) {
+                return DEFAULT_INTERNAL_BATCH_TEMPLATES;
+            }
+        }
+
+        function saveInternalBatchNotifyTemplates(list) {
+            localStorage.setItem('solivent_internal_batch_templates', JSON.stringify(list));
+            renderInternalBatchTemplatesList();
+            updateExpeditionBatchBar();
+        }
+
+        function renderInternalBatchTemplatesList() {
+            const container = document.getElementById('internalBatchTemplatesList');
+            if (!container) return;
+            const list = getInternalBatchNotifyTemplates();
+            container.innerHTML = list.map(t => `
+                <div class="p-3 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600 flex items-start justify-between gap-2">
+                    <div class="min-w-0 flex-1 space-y-0.5">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2 py-0.5 bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-200 font-bold rounded text-[11px]">Botón: ${escapeHtml(t.label)}</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate">Asunto: ${escapeHtml(t.subject)}</span>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 text-[11px] whitespace-pre-line">${escapeHtml(t.body)}</p>
+                        <p class="text-[10px] font-mono text-gray-400">Línea: ${escapeHtml(t.lineFormat)}</p>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button type="button" onclick="editInternalBatchTemplateItem('${escapeJs(t.id)}')" class="p-1.5 text-gray-400 hover:text-brand-600 transition" title="Editar plantilla de lote"><i class="fa-solid fa-pen"></i></button>
+                        ${list.length > 1 ? `<button type="button" onclick="deleteInternalBatchTemplateItem('${escapeJs(t.id)}')" class="p-1.5 text-gray-400 hover:text-red-500 transition" title="Eliminar plantilla de lote"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openNewInternalBatchTemplateForm() {
+            document.getElementById('editInternalBatchTplId').value = '';
+            document.getElementById('editInternalBatchTplLabel').value = '';
+            document.getElementById('editInternalBatchTplSubject').value = 'Pedidos ({numeros}) ...';
+            document.getElementById('editInternalBatchTplLine').value = '• Pedido/Albarán {numero} ({cliente})';
+            document.getElementById('editInternalBatchTplBody').value = 'Hola {nombre}, te informo de que los siguientes pedidos/albaranes:\n\n{lista}';
+            document.getElementById('internalBatchTplEditorCard').classList.remove('hidden');
+            document.getElementById('editInternalBatchTplLabel').focus();
+        }
+
+        function editInternalBatchTemplateItem(id) {
+            const tpl = getInternalBatchNotifyTemplates().find(t => t.id === id);
+            if (!tpl) return;
+            document.getElementById('editInternalBatchTplId').value = tpl.id;
+            document.getElementById('editInternalBatchTplLabel').value = tpl.label;
+            document.getElementById('editInternalBatchTplSubject').value = tpl.subject;
+            document.getElementById('editInternalBatchTplLine').value = tpl.lineFormat || '• Pedido/Albarán {numero} ({cliente})';
+            document.getElementById('editInternalBatchTplBody').value = tpl.body;
+            document.getElementById('internalBatchTplEditorCard').classList.remove('hidden');
+            document.getElementById('editInternalBatchTplLabel').focus();
+        }
+
+        function closeInternalBatchTplEditorCard() {
+            const card = document.getElementById('internalBatchTplEditorCard');
+            if (card) card.classList.add('hidden');
+        }
+
+        function saveInternalBatchTemplateItem() {
+            const id = document.getElementById('editInternalBatchTplId').value.trim();
+            const label = document.getElementById('editInternalBatchTplLabel').value.trim();
+            const subject = document.getElementById('editInternalBatchTplSubject').value.trim();
+            const lineFormat = document.getElementById('editInternalBatchTplLine').value.trim() || '• Pedido/Albarán {numero} ({cliente})';
+            const body = document.getElementById('editInternalBatchTplBody').value.trim();
+
+            if (!label || !subject || !body) {
+                showToast('Completa la etiqueta, el asunto y el cuerpo del mensaje');
+                return;
+            }
+
+            let list = getInternalBatchNotifyTemplates();
+            if (id) {
+                list = list.map(t => t.id === id ? { id, label, subject, lineFormat, body } : t);
+            } else {
+                list.push({
+                    id: 'batch_custom_' + Math.random().toString(36).substr(2, 7),
+                    label,
+                    subject,
+                    lineFormat,
+                    body
+                });
+            }
+            saveInternalBatchNotifyTemplates(list);
+            closeInternalBatchTplEditorCard();
+            showToast('Plantilla de lote guardada');
+        }
+
+        function deleteInternalBatchTemplateItem(id) {
+            const list = getInternalBatchNotifyTemplates();
+            if (list.length <= 1) return;
+            if (!confirm('¿Eliminar esta plantilla de lote?')) return;
+            saveInternalBatchNotifyTemplates(list.filter(t => t.id !== id));
+            showToast('Plantilla de lote eliminada');
+        }
+
         let selectedExpeditionIds = new Set();
         let labelsBridgeActive = false;
 
@@ -11762,7 +11933,9 @@ REGLAS:
         function openInternalNotifyConfigModal() {
             renderInternalRecipientsTable();
             renderInternalTemplatesList();
+            renderInternalBatchTemplatesList();
             closeInternalTplEditorCard();
+            closeInternalBatchTplEditorCard();
             document.getElementById('internalNotifyConfigModal').classList.remove('hidden');
         }
 
@@ -12034,16 +12207,25 @@ REGLAS:
         function updateExpeditionBatchBar() {
             const bar = document.getElementById('expeditionBatchNotifyBar');
             const countEl = document.getElementById('expeditionSelectedCount');
+            const btnsContainer = document.getElementById('expeditionBatchButtonsContainer');
             if (!bar || !countEl) return;
             if (selectedExpeditionIds.size > 0) {
                 countEl.innerText = selectedExpeditionIds.size;
+                if (btnsContainer) {
+                    const batchTpls = getInternalBatchNotifyTemplates();
+                    btnsContainer.innerHTML = batchTpls.map((t, idx) => `
+                        <button type="button" onclick="sendBatchInternalNotice('${escapeJs(t.id)}')" class="px-2.5 py-1 ${idx === 0 ? 'bg-sky-600 hover:bg-sky-700' : (idx === 1 ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700')} text-white rounded-md font-bold text-[11px] transition flex items-center gap-1" title="${escapeHtml(t.subject)}">
+                            <i class="fa-solid ${idx === 0 ? 'fa-box-open' : (idx === 1 ? 'fa-truck-fast' : 'fa-paper-plane')}"></i> ${escapeHtml(t.label)}
+                        </button>
+                    `).join('');
+                }
                 bar.classList.remove('hidden');
             } else {
                 bar.classList.add('hidden');
             }
         }
 
-        async function sendBatchInternalNotice(modeType) {
+        async function sendBatchInternalNotice(batchTemplateId) {
             if (selectedExpeditionIds.size === 0) return;
             const recipient = getSelectedInternalRecipient();
             if (!recipient) {
@@ -12055,27 +12237,31 @@ REGLAS:
             const selectedItems = all.filter(e => selectedExpeditionIds.has(e.id));
             if (selectedItems.length === 0) return;
 
-            const isWithTransport = modeType === 'preparado_transporte';
+            const batchTemplates = getInternalBatchNotifyTemplates();
+            const tpl = batchTemplates.find(t => t.id === batchTemplateId) || batchTemplates[0];
+            if (!tpl) return;
+
             const numsList = selectedItems.map(i => i.docNum).join(', ');
-            const subject = isWithTransport
-                ? `Pedidos preparados y transporte solicitado (${numsList})`
-                : `Pedidos preparados (${numsList})`;
+            const linesText = selectedItems.map(i => applyInternalNoticeVariables(tpl.lineFormat || '• Pedido/Albarán {numero} ({cliente})', {
+                nombre: recipient.name,
+                numero: i.docNum || 'SIN_NUM',
+                cliente: i.clientName || 'Cliente',
+                agencia: i.transport || 'SEUR',
+                bultos: i.bultos || '1 bulto'
+            })).join('\n');
 
-            const linesText = selectedItems.map(i => {
-                if (isWithTransport) {
-                    return `• Pedido/Albarán ${i.docNum} (${i.clientName}) — Transporte: ${i.transport} (${i.bultos || '1 bulto'})`;
-                }
-                return `• Pedido/Albarán ${i.docNum} (${i.clientName})`;
-            }).join('\n');
+            const applyBatchVars = (str) => String(str || '')
+                .replace(/\{nombre\}/gi, recipient.name || '')
+                .replace(/\{numeros\}/gi, numsList)
+                .replace(/\{lista\}/gi, linesText);
 
-            const body = isWithTransport
-                ? `Hola ${recipient.name}, te informo de que los siguientes pedidos/albaranes ya están preparados y su transporte está solicitado:\n\n${linesText}`
-                : `Hola ${recipient.name}, te informo de que los siguientes pedidos/albaranes ya están preparados:\n\n${linesText}`;
+            const subject = applyBatchVars(tpl.subject);
+            const body = applyBatchVars(tpl.body);
 
             try {
                 const sentMode = await dispatchInternalEmailDirectOrMailto(recipient.email, subject, body);
                 const nowTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                const labelShort = isWithTransport ? 'Prep. + Transp. (Lote)' : 'Preparado (Lote)';
+                const labelShort = `${tpl.label} (Lote)`;
                 const updated = all.map(item => selectedExpeditionIds.has(item.id) ? {
                     ...item,
                     internalNotifiedTo: recipient.name,
