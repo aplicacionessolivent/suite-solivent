@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v49 - Sol i Vent Paisajes</title>
+    <title>Herramientas Documentos v50 - Sol i Vent Paisajes</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2394,6 +2394,9 @@
 
                 <div class="flex flex-wrap justify-end gap-2">
                     <button type="button" onclick="closeChecklistModal()" class="px-3.5 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition">Cancelar</button>
+                    <button type="button" onclick="saveChecklistChangesOnly()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5" title="Guardar los cambios en el historial sin generar ni imprimir PDF">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar
+                    </button>
                     <button type="button" onclick="buildAndDownloadChecklistPdf(0)" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5" title="Imprimir únicamente la hoja de checklist">
                         <i class="fa-solid fa-clipboard-check"></i> Solo Checklist
                     </button>
@@ -11095,6 +11098,45 @@ REGLAS:
                 const copiedPages = await pdfDoc.copyPages(srcDoc, pageIndices);
                 copiedPages.forEach(p => pdfDoc.addPage(p));
             }
+        }
+
+        async function saveChecklistChangesOnly() {
+            const docNum = document.getElementById('chkDocNum').value.trim() || 'SIN_NUM';
+            const clientRaw = document.getElementById('chkClientName').value.trim() || 'Cliente';
+            let transport = document.getElementById('chkTransportVal').value;
+            if (transport === 'Otro') {
+                transport = document.getElementById('chkTransportCustom').value.trim() || 'Otro';
+            }
+            const bultos = document.getElementById('chkBultos').value.trim() || 'Por determinar';
+            const observaciones = document.getElementById('chkObservaciones').value.trim();
+
+            const activeItem = activeChecklistAlbaranId ? albaranesList.find(a => a.id === activeChecklistAlbaranId) : null;
+            if (activeItem) {
+                activeItem.extractedDocNum = docNum;
+                activeItem.extractedClient = clientRaw;
+                activeItem.savedObservaciones = observaciones;
+                activeItem.savedTransport = document.getElementById('chkTransportVal').value;
+                activeItem.savedTransportCustom = document.getElementById('chkTransportCustom').value.trim();
+                activeItem.savedBultos = bultos;
+                activeItem.extractedLines = JSON.parse(JSON.stringify(activeChecklistItems));
+            }
+
+            await recordExpeditionEntry({
+                itemId: activeItem ? activeItem.id : null,
+                docNum,
+                clientRaw,
+                transport,
+                bultos,
+                observaciones,
+                itemsCount: activeChecklistItems.length,
+                items: JSON.parse(JSON.stringify(activeChecklistItems)),
+                pdfBytes: activeItem ? activeItem.pdfBytes : null,
+                rawBuffer: activeItem ? activeItem.rawBuffer : null
+            });
+
+            document.getElementById('checklistModal').classList.add('hidden');
+            renderAlbaranList();
+            showToast('Cambios guardados en el historial de expediciones');
         }
 
         async function buildAndDownloadChecklistPdf(forcedCopies = null) {
