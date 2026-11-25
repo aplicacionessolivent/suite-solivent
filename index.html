@@ -425,6 +425,63 @@
             height: 100%;
             object-fit: contain;
         }
+
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+        @media print {
+            html:has(body.printing-maint-sheet),
+            body.printing-maint-sheet,
+            html:has(body.printing-maint-report),
+            body.printing-maint-report {
+                height: auto !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                overflow: visible !important;
+            }
+            body.printing-maint-sheet > *:not(#mnt-printable-sheet) {
+                display: none !important;
+            }
+            body.printing-maint-sheet #mnt-printable-sheet {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 4mm 6mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+            }
+            body.printing-maint-report > *:not(#mnt-printable-report) {
+                display: none !important;
+            }
+            body.printing-maint-report #mnt-printable-report {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 2mm 4mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+            }
+            body.printing-maint-report #mnt-printable-report tr {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            body.printing-maint-report #mnt-printable-report thead {
+                display: table-header-group !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-full flex flex-col font-sans transition-colors duration-300">
@@ -442,10 +499,17 @@
                 </div>
             </div>
             
-            <button id="themeToggleBtn" class="p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Cambiar tema">
-                <i class="fa-solid fa-moon text-lg dark:hidden"></i>
-                <i class="fa-solid fa-sun text-lg hidden dark:block"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="openGlobalSearchModal()" class="px-3 py-2 bg-gray-100 hover:bg-brand-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 hover:text-brand-700 dark:hover:text-brand-300 border border-gray-200 dark:border-gray-600 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-2xs" title="Buscador Global Instantáneo en todos los módulos (Ctrl+K)">
+                    <i class="fa-solid fa-magnifying-glass text-brand-600 dark:text-brand-400"></i>
+                    <span class="hidden sm:inline">Buscar en toda la suite...</span>
+                    <kbd class="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-500">Ctrl+K</kbd>
+                </button>
+                <button id="themeToggleBtn" class="p-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Cambiar tema">
+                    <i class="fa-solid fa-moon text-lg dark:hidden"></i>
+                    <i class="fa-solid fa-sun text-lg hidden dark:block"></i>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -537,6 +601,28 @@
                 </div>
                 <div id="homeAlertsList" class="space-y-2 text-xs text-gray-500">
                     Sin avisos pendientes por el momento.
+                </div>
+            </div>
+
+            <!-- Resumen y Estadísticas del Mes (Desplegable) -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                <button type="button" onclick="toggleHomeMonthlyStats()" class="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/40 transition">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-emerald-600"></i>
+                        <span class="font-bold text-sm text-gray-800 dark:text-gray-200">Resumen y Estadísticas del Mes</span>
+                        <span id="homeMonthlyStatsPeriodBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold"></span>
+                    </div>
+                    <i id="homeMonthlyStatsChevron" class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform duration-200"></i>
+                </button>
+                <div id="homeMonthlyStatsBody" class="hidden px-5 pb-5 pt-2 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span class="text-gray-500 dark:text-gray-400">Indicadores calculados automáticamente a partir de tus registros locales:</span>
+                        <div class="flex items-center gap-1.5">
+                            <label for="homeStatsMonthPicker" class="font-semibold text-gray-600 dark:text-gray-300">Mes:</label>
+                            <input type="month" id="homeStatsMonthPicker" onchange="renderHomeMonthlyStats()" class="px-2.5 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-bold focus:outline-none">
+                        </div>
+                    </div>
+                    <div id="homeMonthlyStatsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
                 </div>
             </div>
         </div>
@@ -1852,6 +1938,258 @@
             </div>
         </div>
 
+
+        <!-- SECCIÓN 8B: CONTROL DE BOLSA Y HORAS DE MANTENIMIENTO -->
+        <div id="sectionMantenimiento" class="hidden space-y-6">
+            <!-- Cabecera y Selector de Contratos -->
+            <div class="bg-gradient-to-r from-emerald-700 to-emerald-800 text-white p-5 rounded-2xl shadow-md flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 bg-white/15 rounded-xl flex items-center justify-center text-2xl text-emerald-200 shadow-inner">
+                        <i class="fa-solid fa-tree"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold tracking-tight">Control de Bolsa y Horas de Mantenimiento</h2>
+                        <p class="text-xs text-emerald-100">Gestión de presupuestos, tarifas personalizadas y partes de cuadrilla</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label for="mnt-client-selector" class="text-xs font-semibold uppercase text-emerald-200">Contrato:</label>
+                    <select id="mnt-client-selector" onchange="mntSwitchClient(this.value)" class="bg-emerald-950/80 border border-emerald-500/50 text-white text-xs sm:text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-300 font-bold"></select>
+                    <button type="button" onclick="mntRenameCurrentClient()" class="bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs font-semibold px-2.5 py-2 rounded-xl transition flex items-center gap-1 shadow-xs" title="Renombrar contrato actual">
+                        <i class="fa-solid fa-pen-to-square"></i> <span>Renombrar</span>
+                    </button>
+                    <button type="button" onclick="mntPromptNewClient()" class="bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1 shadow-xs" title="Crear un nuevo cliente o contrato">
+                        <i class="fa-solid fa-plus"></i> <span>Nuevo Contrato</span>
+                    </button>
+                    <button type="button" onclick="mntDeleteCurrentClient()" class="bg-red-700/85 hover:bg-red-700 text-white text-xs font-semibold px-2.5 py-2 rounded-xl transition flex items-center gap-1 shadow-xs" title="Eliminar contrato actual">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <span class="text-emerald-400/50 hidden sm:inline">|</span>
+                    <button type="button" onclick="mntExportBackupJSON()" class="bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-white text-xs font-semibold px-2.5 py-2 rounded-xl transition flex items-center gap-1" title="Exportar copia individual de mantenimiento">
+                        <i class="fa-solid fa-download"></i> <span>Respaldo</span>
+                    </button>
+                    <button type="button" onclick="mntTriggerImportJSON()" class="bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-white text-xs font-semibold px-2.5 py-2 rounded-xl transition flex items-center gap-1" title="Importar copia individual de mantenimiento">
+                        <i class="fa-solid fa-upload"></i> <span>Importar</span>
+                    </button>
+                    <input type="file" id="mnt-import-file-input" accept=".json" class="hidden" onchange="mntHandleFileImport(event)">
+                </div>
+            </div>
+
+            <!-- Tarjetas KPI de Presupuesto y Horas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Presupuesto Inicial</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span id="mnt-kpi-initial" class="text-2xl font-bold text-gray-900 dark:text-white">14.950,00 €</span>
+                                <button type="button" onclick="mntEditInitialBudget()" class="text-gray-400 hover:text-emerald-600 text-xs" title="Modificar presupuesto inicial">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                            <i class="fa-solid fa-wallet text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Bolsa total acordada</p>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Consumido</p>
+                            <p id="mnt-kpi-used" class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">0,00 €</p>
+                        </div>
+                        <div class="p-2.5 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl">
+                            <i class="fa-solid fa-receipt text-xl"></i>
+                        </div>
+                    </div>
+                    <p id="mnt-kpi-used-pct" class="text-xs text-gray-400 mt-2">0% del presupuesto</p>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Presupuesto Restante</p>
+                            <p id="mnt-kpi-remaining" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">14.950,00 €</p>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                            <i class="fa-solid fa-piggy-bank text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mt-3">
+                        <div id="mnt-kpi-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Horas Totales</p>
+                            <p id="mnt-kpi-hours" class="text-2xl font-bold text-gray-900 dark:text-white mt-1">0 h</p>
+                        </div>
+                        <div class="p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
+                            <i class="fa-solid fa-clock text-xl"></i>
+                        </div>
+                    </div>
+                    <p id="mnt-kpi-hours-remaining" class="text-xs text-gray-400 mt-2">Disponibles estimadas: -- h</p>
+                </div>
+            </div>
+
+            <!-- Desglose por Tarifas (Editable) -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div class="px-5 py-3.5 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-tags text-emerald-600"></i> Desglose por Tarifas y Disponibilidad de Horas
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="mntEditContractRates()" class="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-gray-700 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-sliders"></i> Configurar Tarifas / Horas Contratadas
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead class="bg-gray-100/80 dark:bg-gray-700/60 text-xs text-gray-600 dark:text-gray-300 uppercase">
+                            <tr>
+                                <th class="px-4 py-2.5 font-semibold">Tarifa</th>
+                                <th class="px-4 py-2.5 font-semibold">Descripción del Trabajo</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Precio (€/h)</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Horas Contratadas</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Horas Utilizadas</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Horas Restantes</th>
+                                <th class="px-4 py-2.5 font-semibold text-right">Gasto Tarifa (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mnt-rates-table-body" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Grid Principal: Formulario de Parte + Histórico -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Formulario Registrar Parte -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                            <i class="fa-solid fa-file-pen text-emerald-600"></i> Registrar Parte de Trabajo
+                        </h3>
+                        <span class="text-[11px] px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-500 dark:text-gray-300 font-semibold">Albarán</span>
+                    </div>
+
+                    <form id="mnt-work-form" onsubmit="mntSaveEntry(event)" class="space-y-3 text-xs">
+                        <input type="hidden" id="mnt-entry-id" value="">
+
+                        <div>
+                            <label class="block font-semibold text-gray-600 dark:text-gray-300 mb-1">Fecha *</label>
+                            <input type="date" id="mnt-form-date" required class="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-gray-600 dark:text-gray-300 mb-1">Concepto / Ubicación / Parcela *</label>
+                            <textarea id="mnt-form-concept" rows="2" placeholder="Ej: Parcela El Frontón, desbroce completo y poda..." required class="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-semibold text-gray-600 dark:text-gray-300 mb-1">Nº Trabajadores</label>
+                                <input type="number" id="mnt-form-workers" min="1" value="1" class="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-gray-600 dark:text-gray-300 mb-1">Operarios</label>
+                                <input type="text" id="mnt-form-worker-names" list="staffDatalist" placeholder="Ej: Narcis y Pasquale" class="w-full text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700">
+                            <p class="font-bold text-gray-700 dark:text-gray-200 mb-2">Horas por Tipo de Trabajo:</p>
+                            <div id="mnt-form-rates-grid" class="grid grid-cols-2 gap-2"></div>
+                            <div class="mt-2.5 px-3 py-2 bg-emerald-50/90 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between">
+                                <span class="text-[11px] font-semibold text-emerald-900 dark:text-emerald-200">
+                                    Importe estimado (<span id="mnt-live-hours">0</span> h):
+                                </span>
+                                <span id="mnt-live-total" class="text-sm font-black text-emerald-700 dark:text-emerald-300">0,00 €</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 flex gap-2">
+                            <button type="submit" id="mnt-btn-save" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow">
+                                <i class="fa-solid fa-floppy-disk"></i> Guardar Parte
+                            </button>
+                            <button type="button" onclick="mntResetForm()" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-3 rounded-xl text-xs transition">
+                                Limpiar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Histórico de Trabajos Realizados -->
+                <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+                    <div class="px-5 py-3.5 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-emerald-600"></i>
+                            <h3 class="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Histórico de Trabajos Realizados</h3>
+                            <span id="mnt-entries-count-badge" class="text-xs bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">0</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
+                                <label for="mntEntriesPageSizeSelect" class="font-semibold">Mostrar:</label>
+                                <select id="mntEntriesPageSizeSelect" onchange="changeSuiteListPageSize('mantenimientoEntries', this.value)" class="py-1.5 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="0">Todos</option>
+                                </select>
+                            </div>
+                            <input type="text" id="mnt-table-search" oninput="resetSuiteListPage('mantenimientoEntries'); mntRenderTable()" placeholder="Buscar parcela o trabajo..." class="text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                            <button type="button" onclick="mntPrintSummaryReport()" class="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1" title="Imprimir o guardar en PDF el resumen del contrato y el histórico filtrado">
+                                <i class="fa-solid fa-file-pdf text-red-500"></i> <span>Informe PDF</span>
+                            </button>
+                            <button type="button" onclick="mntSendSummaryByMail()" class="bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1" title="Enviar resumen del contrato por Correo Corporativo">
+                                <i class="fa-solid fa-paper-plane"></i> <span>Email</span>
+                            </button>
+                            <button type="button" onclick="mntExportCSV()" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1" title="Exportar a CSV/Excel">
+                                <i class="fa-solid fa-file-csv text-emerald-600"></i> <span>CSV</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-100/80 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300 uppercase border-b border-gray-200 dark:border-gray-700">
+                                <tr>
+                                    <th class="px-3 py-2.5 font-semibold">Fecha</th>
+                                    <th class="px-3 py-2.5 font-semibold">Concepto / Operarios</th>
+                                    <th class="px-3 py-2.5 font-semibold">Desglose Horas</th>
+                                    <th class="px-3 py-2.5 font-semibold text-right">Total (€)</th>
+                                    <th class="px-2 py-2.5 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mnt-entries-table-body" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="mnt-entries-pagination-footer" class="px-4 pb-3.5"></div>
+                </div>
+            </div>
+
+            <!-- Barra de Impresión Hoja Interna de Control para Cuadrilla -->
+            <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-emerald-600 text-white rounded-xl shadow-xs">
+                        <i class="fa-solid fa-print text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 dark:text-white text-sm">Hoja Interna de Control para Cuadrilla (PDF / Papel)</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-300">Genera e imprime el anexo limpio ajustado a exactamente 1 hoja A4 para grapar al albarán del cliente.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="mntPrintControlSheet()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-file-pdf"></i> <span>Imprimir Hoja de Control (1 Página A4)</span>
+                </button>
+            </div>
+        </div>
 
         <!-- SECCIÓN 9: CORREO CORPORATIVO ESPEJO (GOOGLE WORKSPACE) -->
         <div id="sectionMail" class="hidden space-y-4">
@@ -3236,7 +3574,8 @@
             { key: 'labels', label: 'Posicionador de Etiquetas', icon: 'fa-solid fa-layer-group', sectionId: 'sectionLabels' },
             { key: 'notes', label: 'Notas, Avisos y Calendario', icon: 'fa-solid fa-calendar-check', sectionId: 'sectionNotes' },
             { key: 'arbor', label: 'Reparaciones de ArborSystems', icon: 'fa-solid fa-syringe', sectionId: 'sectionArbor' },
-            { key: 'maquinaria', label: 'Maquinaria y Vehículos', icon: 'fa-solid fa-tractor', sectionId: 'sectionMaquinaria' }
+            { key: 'maquinaria', label: 'Maquinaria y Vehículos', icon: 'fa-solid fa-tractor', sectionId: 'sectionMaquinaria' },
+            { key: 'mantenimiento', label: 'Control de Horas Mantenimiento', icon: 'fa-solid fa-tree', sectionId: 'sectionMantenimiento' }
         ];
 
         let activeTabKey = 'home';
@@ -3253,7 +3592,8 @@
             { key: 'labels', label: 'Etiquetas A4', sub: 'Plantillas SEUR y GLS/MRW', icon: 'fa-solid fa-layer-group' },
             { key: 'notes', label: 'Notas y Avisos', sub: 'Calendario y alertas activas', icon: 'fa-solid fa-calendar-check' },
             { key: 'arbor', label: 'Reparaciones ArborSystems', sub: 'Partes de taller y catálogo de piezas', icon: 'fa-solid fa-syringe' },
-            { key: 'maquinaria', label: 'Maquinaria y Vehículos', sub: 'Incidencias, inventario y vencimientos', icon: 'fa-solid fa-tractor' }
+            { key: 'maquinaria', label: 'Maquinaria y Vehículos', sub: 'Incidencias, inventario y vencimientos', icon: 'fa-solid fa-tractor' },
+            { key: 'mantenimiento', label: 'Control Horas Mantenimiento', sub: 'Bolsa de horas, tarifas P1-P4 y partes', icon: 'fa-solid fa-tree' }
         ];
 
         let draggedHomeKey = null;
@@ -3463,6 +3803,7 @@
                     maqPartes: getMaqPartes(),
                     arborPiecesCatalog: getArborPiecesCatalog(),
                     maqCatalog: getMaqCatalog(),
+                    mantenimientoState: mntLoadState(),
                     expeditionHistory: getExpeditionHistory(),
                     quickMessages: getQuickMessageTemplates(),
                     internalRecipients: getInternalRecipients(),
@@ -3825,7 +4166,8 @@
                             `• Partes ArborSystems: ${Array.isArray(d.arborPartes) ? d.arborPartes.length : 0}`,
                             `• Partes Maquinaria: ${Array.isArray(d.maqPartes) ? d.maqPartes.length : 0}`,
                             `• Piezas ArborSystems: ${Array.isArray(d.arborPiecesCatalog) ? d.arborPiecesCatalog.length : 0}`,
-                            `• Máquinas registradas: ${Array.isArray(d.maqCatalog) ? d.maqCatalog.length : 0}`
+                            `• Máquinas registradas: ${Array.isArray(d.maqCatalog) ? d.maqCatalog.length : 0}`,
+                            `• Contratos Mantenimiento: ${(d.mantenimientoState && Array.isArray(d.mantenimientoState.clients)) ? d.mantenimientoState.clients.length : 0}`
                         ].join('\n');
 
                         if (!confirm(`Se ha detectado una Copia de Seguridad General (${fechaStr}):\n\n${resumen}\n\n¿Deseas restaurar todos estos datos ahora?`)) {
@@ -3841,6 +4183,7 @@
                         if (Array.isArray(d.maqPartes)) localStorage.setItem('solivent_partes_maq', JSON.stringify(d.maqPartes));
                         if (Array.isArray(d.arborPiecesCatalog)) localStorage.setItem('solivent_arbor_pieces', JSON.stringify(d.arborPiecesCatalog));
                         if (Array.isArray(d.maqCatalog)) localStorage.setItem('solivent_maquinaria_cat', JSON.stringify(d.maqCatalog));
+                        if (d.mantenimientoState && Array.isArray(d.mantenimientoState.clients)) { localStorage.setItem('gardening_app_state_v2', JSON.stringify(d.mantenimientoState)); mntAppState = mntLoadState(); if (activeTabKey === 'mantenimiento') mntUpdateApp(); }
                         if (Array.isArray(d.expeditionHistory)) localStorage.setItem('solivent_expeditions', JSON.stringify(d.expeditionHistory));
                         if (Array.isArray(d.quickMessages)) localStorage.setItem('solivent_quick_messages', JSON.stringify(d.quickMessages));
                         if (Array.isArray(d.internalRecipients)) localStorage.setItem('solivent_internal_recipients', JSON.stringify(d.internalRecipients));
@@ -3863,6 +4206,15 @@
                         if (typeof refreshExportGeminiBadge === 'function') refreshExportGeminiBadge();
 
                         showToast('¡Copia de seguridad general restaurada con éxito!');
+                        return;
+                    }
+
+                    // Caso 2B: Respaldo individual del módulo Control de Horas de Mantenimiento
+                    if (parsed && Array.isArray(parsed.clients) && parsed.clients.length > 0 && (parsed.clients[0].rates || parsed.clients[0].ratesList)) {
+                        localStorage.setItem('gardening_app_state_v2', JSON.stringify(parsed));
+                        mntAppState = mntLoadState();
+                        if (activeTabKey === 'mantenimiento') mntUpdateApp();
+                        showToast('Respaldo de Control de Horas de Mantenimiento restaurado');
                         return;
                     }
 
@@ -3973,6 +4325,8 @@
                 switchArborSubTool('arbor');
             } else if (tabKey === 'maquinaria') {
                 switchMaqSubTool('maq');
+            } else if (tabKey === 'mantenimiento') {
+                initMantenimientoModule();
             }
         }
 
@@ -8570,6 +8924,15 @@ REGLAS:
                 editable: true,
                 events: getCalendarEvents(),
                 eventClick: function(info) {
+                    const ext = info.event.extendedProps || {};
+                    if (ext.source === 'maquinaria' && ext.machineId) {
+                        switchTab('maquinaria');
+                        switchMaqSubTool('cat_maq');
+                        if (typeof editMaqCatalogItem === 'function') {
+                            setTimeout(() => editMaqCatalogItem(ext.machineId), 80);
+                        }
+                        return;
+                    }
                     editNote(info.event.id);
                 }
             });
@@ -8577,15 +8940,43 @@ REGLAS:
         }
 
         function getCalendarEvents() {
-            return notesList
+            const noteEvents = notesList
                 .filter(n => n.datetime || n.date)
                 .map(n => ({
                     id: n.id,
                     title: n.title,
                     start: n.datetime || n.date,
                     backgroundColor: getColorHex(n.color),
-                    borderColor: getColorHex(n.color)
+                    borderColor: getColorHex(n.color),
+                    extendedProps: { source: 'note' }
                 }));
+
+            const maqEvents = [];
+            if (typeof getMaqCatalog === 'function') {
+                (getMaqCatalog() || []).forEach(m => {
+                    const entries = [
+                        { date: m.itvDate, label: 'ITV', color: '#8b5cf6' },
+                        { date: m.insuranceDate, label: 'Seguro', color: '#ea580c' },
+                        { date: m.maintDate, label: 'Revisión', color: '#0d9488' }
+                    ];
+                    entries.forEach(item => {
+                        if (item.date) {
+                            maqEvents.push({
+                                id: `maq_${m.id}_${item.label}`,
+                                title: `🚜 ${item.label}: [${m.code}] ${m.name}`,
+                                start: item.date,
+                                allDay: true,
+                                editable: false,
+                                backgroundColor: item.color,
+                                borderColor: item.color,
+                                extendedProps: { source: 'maquinaria', machineId: m.id }
+                            });
+                        }
+                    });
+                });
+            }
+
+            return [...noteEvents, ...maqEvents];
         }
 
         function updateCalendarEvents() {
@@ -8883,6 +9274,7 @@ REGLAS:
             const notes = getNotes();
             const active = notes.filter(n => !n.dismissed && n.alertTimestamp && now >= n.alertTimestamp);
             const maqAlerts = typeof getUpcomingMaqExpiries === 'function' ? getUpcomingMaqExpiries() : [];
+            const mntAlerts = typeof mntGetContractAlerts === 'function' ? mntGetContractAlerts() : [];
             
             const badge = document.getElementById('homeAlertsBadge');
             if (badge) {
@@ -8892,7 +9284,7 @@ REGLAS:
 
             const container = document.getElementById('homeAlertsList');
             if (container) {
-                if (active.length === 0 && maqAlerts.length === 0) {
+                if (active.length === 0 && maqAlerts.length === 0 && mntAlerts.length === 0) {
                     container.innerHTML = '<span class="text-gray-400">Sin avisos urgentes ni vencidos en este momento.</span>';
                 } else {
                     const notesHtml = active.map(n => `
@@ -8918,7 +9310,20 @@ REGLAS:
                         </div>
                     `).join('');
 
-                    container.innerHTML = maqHtml + notesHtml;
+                    const mntHtml = mntAlerts.map(al => `
+                        <div class="flex justify-between items-center ${al.severity === 'critical' ? 'bg-red-50/80 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'} p-2.5 rounded-lg border">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-tree ${al.severity === 'critical' ? 'text-red-600' : 'text-amber-600'}"></i>
+                                <div>
+                                    <strong class="text-gray-900 dark:text-white">${escapeHtml(al.contractName)}</strong>
+                                    <div class="text-[11px] font-semibold ${al.severity === 'critical' ? 'text-red-700 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'}">${escapeHtml(al.text)}</div>
+                                </div>
+                            </div>
+                            <button type="button" onclick="mntOpenContractFromAlert('${escapeJs(al.contractId)}')" class="text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold">Abrir bolsa</button>
+                        </div>
+                    `).join('');
+
+                    container.innerHTML = mntHtml + maqHtml + notesHtml;
                 }
             }
         }
@@ -9738,14 +10143,35 @@ REGLAS:
                     const dObj = new Date(m.date);
                     const dateFormatted = !isNaN(dObj.getTime()) ? dObj.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : m.date;
                     const attHtml = (m.attachments && m.attachments.length > 0) ? `
-                        <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-2">
-                            ${m.attachments.map(a => `
-                                <button type="button" onclick="downloadMailAttachment('${escapeJs(m.id)}', '${escapeJs(a.attachmentId)}', '${escapeJs(a.name)}', '${escapeJs(a.mimeType)}')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-brand-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-[11px] font-semibold border border-gray-200 dark:border-gray-600 flex items-center gap-1.5 transition">
-                                    <i class="fa-solid fa-file-arrow-down text-brand-600"></i>
-                                    <span class="truncate max-w-[180px]">${escapeHtml(a.name)}</span>
-                                    <span class="text-[10px] text-gray-400">(${formatFileSize(a.size || 0)})</span>
-                                </button>
-                            `).join('')}
+                        <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Archivos adjuntos:</div>
+                            <div class="flex flex-col gap-1.5">
+                                ${m.attachments.map(a => {
+                                    const isPdf = (a.mimeType && a.mimeType.toLowerCase().includes('pdf')) || (a.name && a.name.toLowerCase().endsWith('.pdf'));
+                                    return `
+                                    <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 dark:bg-gray-700/50 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-[11px]">
+                                        <button type="button" onclick="downloadMailAttachment('${escapeJs(m.id)}', '${escapeJs(a.attachmentId)}', '${escapeJs(a.name)}', '${escapeJs(a.mimeType)}')" class="font-semibold text-gray-800 dark:text-gray-200 hover:text-brand-600 flex items-center gap-1.5 min-w-0">
+                                            <i class="fa-solid ${isPdf ? 'fa-file-pdf text-red-500' : 'fa-file-arrow-down text-brand-600'}"></i>
+                                            <span class="truncate max-w-[200px]">${escapeHtml(a.name)}</span>
+                                            <span class="text-[10px] text-gray-400">(${formatFileSize(a.size || 0)})</span>
+                                        </button>
+                                        ${isPdf ? `
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            <button type="button" onclick="routeMailPdfAttachment('${escapeJs(m.id)}', '${escapeJs(a.attachmentId)}', '${escapeJs(a.name)}', 'albaran')" class="px-2 py-0.5 bg-brand-50 hover:bg-brand-600 text-brand-700 hover:text-white dark:bg-brand-900/40 dark:text-brand-300 border border-brand-200 dark:border-brand-700 rounded font-bold text-[10px] transition" title="Convertir este PDF directamente a Albarán">
+                                                <i class="fa-solid fa-file-invoice mr-0.5"></i> A Albarán
+                                            </button>
+                                            <button type="button" onclick="routeMailPdfAttachment('${escapeJs(m.id)}', '${escapeJs(a.attachmentId)}', '${escapeJs(a.name)}', 'arbor')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 rounded font-bold text-[10px] transition" title="Crear Parte de Reparación ArborSystems desde este PDF">
+                                                <i class="fa-solid fa-syringe mr-0.5"></i> A ArborSystems
+                                            </button>
+                                            <button type="button" onclick="routeMailPdfAttachment('${escapeJs(m.id)}', '${escapeJs(a.attachmentId)}', '${escapeJs(a.name)}', 'editpdf')" class="px-2 py-0.5 bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-700 rounded font-bold text-[10px] transition" title="Abrir este PDF en el Editor Visual">
+                                                <i class="fa-solid fa-pen-to-square mr-0.5"></i> Editar PDF
+                                            </button>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     ` : '';
 
@@ -9756,7 +10182,15 @@ REGLAS:
                                     <div class="font-bold text-gray-900 dark:text-white">${escapeHtml(m.from)}</div>
                                     <div class="text-[11px] text-gray-400">Para: ${escapeHtml(m.to)}${m.cc ? ' · CC: ' + escapeHtml(m.cc) : ''}</div>
                                 </div>
-                                <span class="text-[11px] text-gray-400">${escapeHtml(dateFormatted)}</span>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <button type="button" onclick="saveMailSenderToContacts('${escapeJs(m.id)}')" class="px-2 py-1 bg-gray-100 hover:bg-emerald-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-emerald-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="Guardar remitente en la Agenda de Contactos">
+                                        <i class="fa-solid fa-user-plus text-emerald-600"></i> Guardar contacto
+                                    </button>
+                                    <button type="button" onclick="createNoteFromMailMessage('${escapeJs(m.id)}')" class="px-2 py-1 bg-gray-100 hover:bg-amber-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-amber-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="Crear Nota o Recordatorio en el Calendario desde este mensaje">
+                                        <i class="fa-solid fa-calendar-plus text-amber-600"></i> Crear aviso
+                                    </button>
+                                    <span class="text-[11px] text-gray-400 ml-1">${escapeHtml(dateFormatted)}</span>
+                                </div>
                             </div>
                             <div class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed break-words overflow-x-auto">${escapeHtml(m.bodyPlain || '')}</div>
                             ${attHtml}
@@ -10384,6 +10818,10 @@ REGLAS:
         }
 
         // --- INICIALIZACIÓN GLOBAL ---
+        document.addEventListener('DOMContentLoaded', function() {
+            try { renderHomeModules(); } catch (e) { console.error(e); }
+        });
+
         window.onload = function() {
             notesList = getNotes();
             renderHomeModules();
@@ -11255,11 +11693,10 @@ REGLAS:
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-
-            window.open(url, '_blank');
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
 
             renderAlbaranList();
-            showToast(numCopies > 0 ? `Pack (${numCopies} albarán(es) + checklist) generado` : 'Checklist generado para imprimir');
+            showToast(numCopies > 0 ? `Pack (${numCopies} albarán(es) + checklist) guardado en Descargas` : 'Checklist guardado en Descargas');
             closeChecklistModal();
         }
 
@@ -11317,9 +11754,8 @@ REGLAS:
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-
-                window.open(url, '_blank');
-                showToast(`Lote completo de ${validos.length} pedido(s) generado`);
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                showToast(`Lote completo de ${validos.length} pedido(s) guardado en Descargas`);
             } catch (err) {
                 console.error(err);
                 showToast('Error al generar el lote PDF');
@@ -11570,24 +12006,41 @@ REGLAS:
         }
 
         function printExpeditionFromPreview() {
-            if (activeHistoryPreviewPdfUrl) {
-                const win = window.open(activeHistoryPreviewPdfUrl, '_blank');
-                if (win) {
-                    win.focus();
-                    return;
-                }
-            }
-            // Fallback: imprimir directamente los lienzos renderizados en una ventana limpia
             const canvases = document.querySelectorAll('#histPreviewPagesContainer canvas');
-            if (!canvases.length) return;
-            const printWin = window.open('', '_blank');
-            if (!printWin) {
-                showToast('Activa las ventanas emergentes o pulsa Descargar PDF para imprimir');
+            if (canvases.length > 0) {
+                let iframe = document.getElementById('histHiddenPrintFrame');
+                if (iframe) iframe.remove();
+                iframe = document.createElement('iframe');
+                iframe.id = 'histHiddenPrintFrame';
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                document.body.appendChild(iframe);
+
+                const imgsHtml = Array.from(canvases).map((c, idx) =>
+                    `<div style="${idx < canvases.length - 1 ? 'page-break-after: always;' : ''} text-align: center;"><img src="${c.toDataURL('image/png')}" style="width:100%; max-width:210mm; height:auto; display:block; margin:0 auto;" /></div>`
+                ).join('');
+
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(`<!DOCTYPE html><html><head><title>Imprimir Albarán y Checklist</title><style>@page{size:A4 portrait;margin:0;}html,body{margin:0;padding:0;background:#fff;}</style></head><body>${imgsHtml}</body></html>`);
+                doc.close();
+
+                setTimeout(() => {
+                    try {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                    } catch (e) {
+                        console.error(e);
+                        showToast('No se pudo abrir el diálogo de impresión. Usa Descargar PDF.');
+                    }
+                }, 150);
                 return;
             }
-            const imgsHtml = Array.from(canvases).map(c => `<div style="page-break-after: always; text-align: center;"><img src="${c.toDataURL('image/png')}" style="width:100%; max-width:210mm; height:auto;" /></div>`).join('');
-            printWin.document.write(`<!DOCTYPE html><html><head><title>Imprimir Albarán y Checklist</title><style>@page{margin:0;}body{margin:0;}</style></head><body>${imgsHtml}<script>window.onload=function(){window.print();};<\/script></body></html>`);
-            printWin.document.close();
+            showToast('Espera a que termine de cargar la vista previa para imprimir');
         }
 
         function closeExpeditionVisualModal() {
@@ -11637,7 +12090,8 @@ REGLAS:
             arborPieces: { page: 1, size: 15 },
             maqPartes: { page: 1, size: 10 },
             maqCatalog: { page: 1, size: 10 },
-            notes: { page: 1, size: 10 }
+            notes: { page: 1, size: 10 },
+            mantenimientoEntries: { page: 1, size: 10 }
         };
 
         function paginateSuiteList(key, items) {
@@ -11704,6 +12158,7 @@ REGLAS:
                 case 'maqPartes': renderMaqPartes(); break;
                 case 'maqCatalog': renderMaqCatalog(); break;
                 case 'notes': renderNotes(); break;
+                case 'mantenimientoEntries': mntRenderTable(); break;
             }
         }
 
@@ -12660,6 +13115,22 @@ REGLAS:
             localStorage.setItem('solivent_maquinaria_cat', JSON.stringify(list));
             renderMaqCatalog();
             renderHomeAlerts();
+            if (typeof updateCalendarEvents === 'function') updateCalendarEvents();
+        }
+
+        function renewMaqExpiryPlusOneYear(machineId, fieldKey, labelName) {
+            const list = getMaqCatalog();
+            const item = list.find(m => m.id === machineId);
+            if (!item || !item[fieldKey]) return;
+            const parts = item[fieldKey].split('-').map(Number);
+            if (parts.length !== 3) return;
+            const nextDate = new Date(parts[0] + 1, parts[1] - 1, parts[2]);
+            const yyyy = nextDate.getFullYear();
+            const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(nextDate.getDate()).padStart(2, '0');
+            item[fieldKey] = `${yyyy}-${mm}-${dd}`;
+            saveMaqCatalog(list);
+            showToast(`${labelName} de ${item.code} renovada hasta ${dd}/${mm}/${yyyy}`);
         }
 
         function getExpiryStatusInfo(dateStr, label) {
@@ -12850,7 +13321,10 @@ REGLAS:
                                 </div>
                             ` : '<div class="text-[11px] text-gray-400 italic">Sin fechas de vencimiento configuradas</div>'}
                         </div>
-                        <div class="flex items-center gap-1.5 self-end sm:self-center flex-shrink-0">
+                        <div class="flex flex-wrap items-center gap-1.5 self-end sm:self-center flex-shrink-0">
+                            ${m.itvDate ? `<button type="button" onclick="renewMaqExpiryPlusOneYear('${m.id}', 'itvDate', 'ITV')" class="px-2 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700 rounded-lg font-bold transition flex items-center gap-1" title="Renovar fecha de ITV +1 año"><i class="fa-solid fa-rotate"></i> ITV +1a</button>` : ''}
+                            ${m.insuranceDate ? `<button type="button" onclick="renewMaqExpiryPlusOneYear('${m.id}', 'insuranceDate', 'Seguro')" class="px-2 py-1.5 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-700 rounded-lg font-bold transition flex items-center gap-1" title="Renovar fecha de Seguro +1 año"><i class="fa-solid fa-rotate"></i> Seguro +1a</button>` : ''}
+                            ${m.maintDate ? `<button type="button" onclick="renewMaqExpiryPlusOneYear('${m.id}', 'maintDate', 'Revisión')" class="px-2 py-1.5 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-700 rounded-lg font-bold transition flex items-center gap-1" title="Renovar fecha de Revisión +1 año"><i class="fa-solid fa-rotate"></i> Rev. +1a</button>` : ''}
                             <button type="button" onclick="editMaqCatalogItem('${m.id}')" class="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-brand-50 text-gray-700 dark:text-gray-200 hover:text-brand-600 rounded-lg font-semibold transition flex items-center gap-1" title="Editar máquina y fechas">
                                 <i class="fa-solid fa-pen"></i> Editar
                             </button>
@@ -13765,8 +14239,8 @@ REGLAS:
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                window.open(url, '_blank');
-                showToast('Parte de trabajo ArborSystems generado');
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                showToast('Parte de trabajo ArborSystems guardado en Descargas');
             } catch (err) {
                 console.error(err);
                 showToast('Error al generar el PDF del parte');
@@ -14417,8 +14891,8 @@ REGLAS:
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                window.open(url, '_blank');
-                showToast('Parte de maquinaria generado para imprimir');
+                setTimeout(() => URL.revokeObjectURL(url), 4000);
+                showToast('Parte de maquinaria guardado en Descargas');
             } catch (err) {
                 console.error(err);
                 showToast('Error al generar el PDF');
@@ -14783,6 +15257,1554 @@ ${JSON.stringify(catalog)}`;
                 }, 1200);
             }
         });
+
+        // =========================================================================
+        // MÓDULO INTEGRADO: CONTROL DE BOLSA Y HORAS DE MANTENIMIENTO (TARIFAS DINÁMICAS)
+        // =========================================================================
+        const MNT_DEFAULT_RATES_LIST = [
+            { id: 'p1', code: 'P1', name: 'Escarda manual, poda y recorte de frutales/cítricos', detail: 'Labores de poda y recorte de frutales/cítricos, escarda manual, recogida y carga de restos a vertedero.', price: 25, contractedHours: 298 },
+            { id: 'p2', code: 'P2', name: 'Reparación de tuberías de riego hasta 63mm', detail: 'Reparación de conducciones, tuberías de riego hasta diámetros 63 mm, piezas y accesorios.', price: 31, contractedHours: 38 },
+            { id: 'p3', code: 'P3', name: 'Tratamientos fitosanitarios y herbicidas manuales', detail: 'Aplicación fitosanitaria y herbicidas manuales con mochila o tanque de 100 litros.', price: 40, contractedHours: 90 },
+            { id: 'p4', code: 'P4', name: 'Laboreo de terreno con maquinaria ligera', detail: 'Laboreo del terreno, pase de mula mecánica / rotovator, desbrozadora mecánica de disco o hilo.', price: 45, contractedHours: 60 }
+        ];
+
+        const MNT_INITIAL_DATA = {
+            clients: [
+                {
+                    id: 'ivia_moncada_2026',
+                    name: 'IVIA MONCADA - Mantenimiento 2026',
+                    initialBudget: 14950,
+                    ratesList: JSON.parse(JSON.stringify(MNT_DEFAULT_RATES_LIST)),
+                    entries: [
+                        { id: '1', date: '2026-09-14', concept: 'PARCELA EL FRENTON, DESBROCE COMPLETO. FALTA PASAR LA MULA.', workers: 2, workerNames: 'Narcis y Pasquale', hoursByRate: { p1: 16 }, total: 400 },
+                        { id: '2', date: '2026-09-17', concept: 'CAMBIO DE TUBERIA PARCELA 10 Y DESBROCE.', workers: 2, workerNames: 'Javi y Pasquale', hoursByRate: { p1: 8, p2: 8 }, total: 448 },
+                        { id: '3', date: '2026-09-21', concept: 'MULA ROTATORIA PARCELA, EL FRENTON Y DESBROCE PARCELA 10.', workers: 2, workerNames: 'Narcis y Pasquale', hoursByRate: { p1: 6, p4: 10 }, total: 600 },
+                        { id: '4', date: '2026-09-22', concept: 'DESBROCE CON DESBROZADORA Y TRITURADORA EN LA PARCELA 11.', workers: 1, workerNames: 'Pasquale', hoursByRate: { p1: 1, p4: 7 }, total: 340 },
+                        { id: '5', date: '2026-09-23', concept: 'DESBOZAR PARCELA.', workers: 1, workerNames: 'Pasquale', hoursByRate: { p1: 1, p4: 7 }, total: 340 },
+                        { id: '6', date: '2026-10-01', concept: 'PASAR LA MULA A LA PARCELA EL FRENTON, RETIRAR MANGUERA Y TRITURAR P.11.', workers: 2, workerNames: '2 Personas', hoursByRate: { p1: 8, p4: 8 }, total: 560 },
+                        { id: '7', date: '2026-10-07', concept: 'ELIMINAR MALA HIERBA EN MACETEROS Y APLICACIÓN DE HERBICIDA.', workers: 1, workerNames: 'Pasquale', hoursByRate: { p1: 3, p3: 5 }, total: 275 },
+                        { id: '8', date: '2026-10-16', concept: 'PODAR Y SANAR CAQUIS Y TRANSPORTE DE RESTOS A VERTEDERO.', workers: 1, workerNames: 'Pasquale', hoursByRate: { p1: 8 }, total: 200 },
+                        { id: '9', date: '2026-10-21', concept: 'RECOGER PODA CLEMENTINAS, PODAR CAQUI Y APLICACIÓN HERBICIDA.', workers: 1, workerNames: 'Pasquale', hoursByRate: { p1: 4, p3: 4 }, total: 260 },
+                        { id: '10', date: '2026-10-23', concept: 'HERBICIDA EN EL FRENTON, CARGAR MANGUERA Y RECOGIDA CAQUIS.', workers: 2, workerNames: '2 Personas', hoursByRate: { p1: 6, p3: 10 }, total: 550 },
+                        { id: '11', date: '2026-10-26', concept: 'DESBROZAR, PASAR LA MULA Y SEMBRAR PARCELA EL FRENTON.', workers: 2, workerNames: 'Narcis y Pasquale', hoursByRate: { p1: 8, p4: 8 }, total: 560 },
+                        { id: '12', date: '2026-11-02', concept: 'DESBROZAR Y PASAR LA MULA EN EL FRENTON Y P.14, ABONO.', workers: 2, workerNames: '2 Personas', hoursByRate: { p1: 6, p4: 10 }, total: 600 }
+                    ]
+                }
+            ],
+            currentClientId: 'ivia_moncada_2026'
+        };
+
+        let mntAppState = null;
+        let mntInitialized = false;
+        let mntModalRatesDraft = [];
+
+        function mntNormalizeClient(client) {
+            if (!client) return client;
+            // Migrar objeto antiguo { p1, p2, p3, p4 } a array dinámico ratesList si aún no existe
+            if (!Array.isArray(client.ratesList) || client.ratesList.length === 0) {
+                if (client.rates && typeof client.rates === 'object') {
+                    const keys = Object.keys(client.rates);
+                    client.ratesList = keys.map((k, idx) => {
+                        const r = client.rates[k] || {};
+                        const defMatch = MNT_DEFAULT_RATES_LIST.find(d => d.id === k);
+                        return {
+                            id: k,
+                            code: (r.code || k.toUpperCase()).trim(),
+                            name: r.name || (defMatch ? defMatch.name : `Tarifa ${idx + 1}`),
+                            detail: r.detail || (defMatch ? defMatch.detail : ''),
+                            price: parseFloat(r.price) || 0,
+                            contractedHours: parseFloat(r.contractedHours) || 0
+                        };
+                    });
+                } else {
+                    client.ratesList = JSON.parse(JSON.stringify(MNT_DEFAULT_RATES_LIST));
+                }
+            }
+            // Migrar entradas antiguas h1..h4 a hoursByRate
+            if (!Array.isArray(client.entries)) client.entries = [];
+            client.entries.forEach(e => {
+                if (!e.hoursByRate || typeof e.hoursByRate !== 'object') {
+                    e.hoursByRate = {};
+                    if (parseFloat(e.h1)) e.hoursByRate.p1 = parseFloat(e.h1);
+                    if (parseFloat(e.h2)) e.hoursByRate.p2 = parseFloat(e.h2);
+                    if (parseFloat(e.h3)) e.hoursByRate.p3 = parseFloat(e.h3);
+                    if (parseFloat(e.h4)) e.hoursByRate.p4 = parseFloat(e.h4);
+                }
+            });
+            return client;
+        }
+
+        function mntGetEntryHoursMap(entry) {
+            if (entry && entry.hoursByRate && typeof entry.hoursByRate === 'object') {
+                return entry.hoursByRate;
+            }
+            const map = {};
+            if (entry) {
+                if (parseFloat(entry.h1)) map.p1 = parseFloat(entry.h1);
+                if (parseFloat(entry.h2)) map.p2 = parseFloat(entry.h2);
+                if (parseFloat(entry.h3)) map.p3 = parseFloat(entry.h3);
+                if (parseFloat(entry.h4)) map.p4 = parseFloat(entry.h4);
+            }
+            return map;
+        }
+
+        function mntComputeEntryCost(client, entry) {
+            if (entry && entry.total !== undefined && entry.total !== null) {
+                return parseFloat(entry.total) || 0;
+            }
+            const hMap = mntGetEntryHoursMap(entry);
+            let sum = 0;
+            (client.ratesList || []).forEach(r => {
+                const h = parseFloat(hMap[r.id]) || 0;
+                sum += h * (parseFloat(r.price) || 0);
+            });
+            return sum;
+        }
+
+        function mntLoadState() {
+            const stored = localStorage.getItem('gardening_app_state_v2');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && Array.isArray(parsed.clients) && parsed.clients.length > 0) {
+                        parsed.clients.forEach(mntNormalizeClient);
+                        return parsed;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            return JSON.parse(JSON.stringify(MNT_INITIAL_DATA));
+        }
+
+        function mntSaveState() {
+            localStorage.setItem('gardening_app_state_v2', JSON.stringify(mntAppState));
+        }
+
+        function mntGetCurrentClient() {
+            if (!mntAppState || !Array.isArray(mntAppState.clients) || mntAppState.clients.length === 0) {
+                mntAppState = mntLoadState();
+            }
+            const client = mntAppState.clients.find(c => c.id === mntAppState.currentClientId) || mntAppState.clients[0];
+            return mntNormalizeClient(client);
+        }
+
+        function mntFormatCurrency(num) {
+            return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(num || 0);
+        }
+
+        function initMantenimientoModule() {
+            mntAppState = mntLoadState();
+            const dateInput = document.getElementById('mnt-form-date');
+            if (dateInput && !dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            if (typeof refreshStaffAndProviderDatalists === 'function') {
+                refreshStaffAndProviderDatalists();
+            }
+            mntInitialized = true;
+            mntUpdateApp();
+        }
+
+        function mntRenderFormRateInputs(preserveValues = null) {
+            const client = mntGetCurrentClient();
+            const grid = document.getElementById('mnt-form-rates-grid');
+            if (!client || !grid) return;
+
+            const currentVals = preserveValues || {};
+            if (!preserveValues) {
+                grid.querySelectorAll('input[data-rate-id]').forEach(inp => {
+                    currentVals[inp.getAttribute('data-rate-id')] = inp.value;
+                });
+            }
+
+            grid.innerHTML = (client.ratesList || []).map(r => {
+                const val = currentVals[r.id] !== undefined && currentVals[r.id] !== '' ? currentVals[r.id] : '';
+                return `
+                    <div class="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-xl border border-gray-200 dark:border-gray-600">
+                        <span class="text-[11px] font-bold text-gray-800 dark:text-gray-100 block">${escapeHtml(r.code)} (${r.price} €/h)</span>
+                        <span class="text-[10px] text-gray-500 dark:text-gray-400 truncate block" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span>
+                        <input type="number" step="0.5" min="0" data-rate-id="${escapeHtml(r.id)}" value="${escapeHtml(val)}" oninput="mntUpdateLiveFormTotal()" placeholder="0" class="mt-1 w-full text-sm font-bold border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-right bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-1 focus:ring-emerald-500">
+                    </div>
+                `;
+            }).join('');
+
+            mntUpdateLiveFormTotal();
+        }
+
+        function mntUpdateApp() {
+            const client = mntGetCurrentClient();
+            if (!client) return;
+
+            const rates = client.ratesList || [];
+            let totalUsed = 0;
+            let totalHours = 0;
+            const hSummary = {};
+            rates.forEach(r => { hSummary[r.id] = 0; });
+
+            (client.entries || []).forEach(e => {
+                const hMap = mntGetEntryHoursMap(e);
+                Object.keys(hMap).forEach(rId => {
+                    const h = parseFloat(hMap[rId]) || 0;
+                    if (hSummary[rId] === undefined) hSummary[rId] = 0;
+                    hSummary[rId] += h;
+                    totalHours += h;
+                });
+                totalUsed += mntComputeEntryCost(client, e);
+            });
+
+            const remainingBudget = client.initialBudget - totalUsed;
+            const pctUsed = client.initialBudget > 0 ? (totalUsed / client.initialBudget) * 100 : 0;
+            const pctRemaining = Math.max(0, 100 - pctUsed);
+
+            document.getElementById('mnt-kpi-initial').innerText = mntFormatCurrency(client.initialBudget);
+            document.getElementById('mnt-kpi-used').innerText = mntFormatCurrency(totalUsed);
+            document.getElementById('mnt-kpi-used-pct').innerText = `${pctUsed.toFixed(1)}% utilizado`;
+
+            const remEl = document.getElementById('mnt-kpi-remaining');
+            remEl.innerText = mntFormatCurrency(remainingBudget);
+            if (remainingBudget < 0) {
+                remEl.className = 'text-2xl font-bold text-red-600 dark:text-red-400 mt-1';
+            } else if (remainingBudget < (client.initialBudget * 0.15)) {
+                remEl.className = 'text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1';
+            } else {
+                remEl.className = 'text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1';
+            }
+
+            const bar = document.getElementById('mnt-kpi-bar');
+            bar.style.width = `${Math.min(100, Math.max(0, pctRemaining))}%`;
+            bar.className = remainingBudget < 0
+                ? 'bg-red-500 h-1.5 rounded-full transition-all'
+                : (remainingBudget < (client.initialBudget * 0.15) ? 'bg-amber-500 h-1.5 rounded-full transition-all' : 'bg-emerald-500 h-1.5 rounded-full transition-all');
+
+            document.getElementById('mnt-kpi-hours').innerText = `${totalHours} h`;
+            const totalContractedHours = rates.reduce((acc, r) => acc + (parseFloat(r.contractedHours) || 0), 0);
+            const remainingContractedHours = totalContractedHours - totalHours;
+            document.getElementById('mnt-kpi-hours-remaining').innerText = totalContractedHours > 0
+                ? `Restantes: ${remainingContractedHours} h de ${totalContractedHours} h`
+                : `Total horas: ${totalHours} h`;
+
+            // Renderizar cajas dinámicas de tarifas en formulario
+            mntRenderFormRateInputs();
+
+            // Tabla de desglose de tarifas
+            const ratesTbody = document.getElementById('mnt-rates-table-body');
+            ratesTbody.innerHTML = '';
+            rates.forEach(r => {
+                const usedH = hSummary[r.id] || 0;
+                const contracted = parseFloat(r.contractedHours) || 0;
+                const remH = contracted - usedH;
+                const cost = usedH * (parseFloat(r.price) || 0);
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/40 transition';
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-bold text-gray-800 dark:text-gray-100 uppercase">${escapeHtml(r.code)}</td>
+                    <td class="px-4 py-3 text-gray-700 dark:text-gray-300">${escapeHtml(r.name)}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-gray-800 dark:text-gray-100">${r.price} €/h</td>
+                    <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">${contracted ? contracted + ' h' : '-'}</td>
+                    <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-gray-100">${usedH} h</td>
+                    <td class="px-4 py-3 text-right font-bold ${contracted && remH < 10 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}">${contracted ? remH + ' h' : '-'}</td>
+                    <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">${mntFormatCurrency(cost)}</td>
+                `;
+                ratesTbody.appendChild(tr);
+            });
+
+            mntRenderClientsDropdown();
+            mntRenderTable();
+        }
+
+        function mntRenderClientsDropdown() {
+            const select = document.getElementById('mnt-client-selector');
+            if (!select) return;
+            select.innerHTML = '';
+            mntAppState.clients.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.innerText = c.name;
+                opt.selected = (c.id === mntAppState.currentClientId);
+                select.appendChild(opt);
+            });
+        }
+
+        function mntSwitchClient(clientId) {
+            mntAppState.currentClientId = clientId;
+            resetSuiteListPage('mantenimientoEntries');
+            mntSaveState();
+            mntResetForm();
+            mntUpdateApp();
+        }
+
+        function mntPromptNewClient() {
+            document.getElementById('mntNewClientName').value = '';
+            document.getElementById('mntNewClientBudget').value = '10000';
+            document.getElementById('mntNewClientRatesMode').value = 'blank';
+            document.getElementById('mntNewClientModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('mntNewClientName').focus(), 50);
+        }
+
+        function closeMntNewClientModal() {
+            document.getElementById('mntNewClientModal').classList.add('hidden');
+        }
+
+        function saveMntNewClientModal(e) {
+            e.preventDefault();
+            const name = (document.getElementById('mntNewClientName').value || '').trim();
+            if (!name) return;
+            const budget = parseFloat(document.getElementById('mntNewClientBudget').value) || 0;
+            const mode = document.getElementById('mntNewClientRatesMode').value;
+
+            let initialRatesList = [];
+            if (mode === 'copy_current') {
+                const curr = mntGetCurrentClient();
+                initialRatesList = JSON.parse(JSON.stringify(curr.ratesList || MNT_DEFAULT_RATES_LIST));
+                initialRatesList.forEach(r => { r.contractedHours = 0; });
+            } else if (mode === 'standard_4') {
+                initialRatesList = JSON.parse(JSON.stringify(MNT_DEFAULT_RATES_LIST));
+                initialRatesList.forEach(r => { r.contractedHours = 0; });
+            } else {
+                initialRatesList = [
+                    { id: 'rate_' + Date.now(), code: 'P1', name: 'Mantenimiento general / Mano de obra', detail: '', price: 25, contractedHours: 0 }
+                ];
+            }
+
+            const newId = 'client_' + Date.now();
+            mntAppState.clients.push({
+                id: newId,
+                name: name,
+                initialBudget: budget,
+                ratesList: initialRatesList,
+                entries: []
+            });
+            mntAppState.currentClientId = newId;
+            resetSuiteListPage('mantenimientoEntries');
+            mntSaveState();
+            closeMntNewClientModal();
+            mntResetForm();
+            mntUpdateApp();
+            if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+            showToast('Contrato creado');
+            // Abrir directamente el configurador de tarifas para ajustarlas cómodamente
+            mntEditContractRates();
+        }
+
+        function mntRenameCurrentClient() {
+            const client = mntGetCurrentClient();
+            if (!client) return;
+
+            const newName = prompt(`Nuevo nombre para el contrato "${client.name}":`, client.name);
+            if (newName && newName.trim() && newName.trim() !== client.name) {
+                client.name = newName.trim();
+                mntSaveState();
+                mntUpdateApp();
+                if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+                showToast('Contrato renombrado');
+            }
+        }
+
+        function mntDeleteCurrentClient() {
+            const client = mntGetCurrentClient();
+            if (!client) return;
+
+            if (mntAppState.clients.length <= 1) {
+                alert('Debe haber al menos un contrato activo en el sistema. Crea uno nuevo antes de borrar este.');
+                return;
+            }
+
+            const confirmDelete = confirm('¿Estás seguro de que deseas eliminar permanentemente el contrato "' + client.name + '" y todos sus partes asociados?\n\nEsta acción no se puede deshacer.');
+            if (!confirmDelete) return;
+
+            mntAppState.clients = mntAppState.clients.filter(c => c.id !== client.id);
+            mntAppState.currentClientId = mntAppState.clients[0].id;
+            mntSaveState();
+            mntUpdateApp();
+            if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+            showToast('Contrato eliminado');
+        }
+
+        function mntEditInitialBudget() {
+            const client = mntGetCurrentClient();
+            const newBudget = prompt(`Modificar presupuesto inicial para "${client.name}" (€):`, client.initialBudget);
+            if (newBudget !== null && !isNaN(parseFloat(newBudget))) {
+                client.initialBudget = parseFloat(newBudget);
+                mntSaveState();
+                mntUpdateApp();
+                if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+                showToast('Presupuesto actualizado');
+            }
+        }
+
+        function mntRateHasRecordedHours(client, rateId) {
+            return (client.entries || []).some(e => {
+                const hMap = mntGetEntryHoursMap(e);
+                return (parseFloat(hMap[rateId]) || 0) > 0;
+            });
+        }
+
+        function mntSyncModalDraftFromInputs() {
+            const tbody = document.getElementById('mntRatesModalBody');
+            if (!tbody) return;
+            mntModalRatesDraft.forEach((r, idx) => {
+                const codeInp = document.getElementById(`mntRateCode_${idx}`);
+                const nameInp = document.getElementById(`mntRateName_${idx}`);
+                const priceInp = document.getElementById(`mntRatePrice_${idx}`);
+                const hoursInp = document.getElementById(`mntRateHours_${idx}`);
+                if (codeInp) r.code = codeInp.value;
+                if (nameInp) r.name = nameInp.value;
+                if (priceInp) r.price = parseFloat(priceInp.value) || 0;
+                if (hoursInp) r.contractedHours = parseFloat(hoursInp.value) || 0;
+            });
+        }
+
+        function mntRenderRatesModalRows() {
+            const client = mntGetCurrentClient();
+            const tbody = document.getElementById('mntRatesModalBody');
+            if (!tbody || !client) return;
+
+            tbody.innerHTML = mntModalRatesDraft.map((r, idx) => {
+                const inUse = mntRateHasRecordedHours(client, r.id);
+                const canDelete = mntModalRatesDraft.length > 1 && !inUse;
+                return `
+                    <tr class="border-b border-gray-100 dark:border-gray-700">
+                        <td class="py-2 px-2">
+                            <input type="text" id="mntRateCode_${idx}" value="${escapeHtml(r.code || '')}" required placeholder="Ej: P${idx + 1}" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-emerald-700 dark:text-emerald-400 font-black uppercase text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </td>
+                        <td class="py-2 px-2">
+                            <input type="text" id="mntRateName_${idx}" value="${escapeHtml(r.name || '')}" required placeholder="Descripción de la tarifa..." class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </td>
+                        <td class="py-2 px-2">
+                            <input type="number" step="0.01" min="0" id="mntRatePrice_${idx}" value="${r.price || 0}" required class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-bold text-right focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </td>
+                        <td class="py-2 px-2">
+                            <input type="number" step="0.5" min="0" id="mntRateHours_${idx}" value="${r.contractedHours || 0}" class="w-full px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-bold text-right focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </td>
+                        <td class="py-2 px-2 text-center">
+                            ${canDelete
+                                ? `<button type="button" onclick="mntRemoveRateRowInModal(${idx})" class="text-red-500 hover:text-red-700 p-1" title="Eliminar esta tarifa"><i class="fa-solid fa-trash-can"></i></button>`
+                                : `<span class="text-gray-300 dark:text-gray-600 p-1 cursor-not-allowed" title="${inUse ? 'No se puede eliminar porque ya tiene horas imputadas en partes' : 'Debe existir al menos 1 tarifa'}"><i class="fa-solid fa-lock text-[11px]"></i></span>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function mntAddRateRowInModal() {
+            mntSyncModalDraftFromInputs();
+            const nextNum = mntModalRatesDraft.length + 1;
+            let candidateCode = 'P' + nextNum;
+            const existingCodes = new Set(mntModalRatesDraft.map(r => (r.code || '').toUpperCase()));
+            let counter = nextNum;
+            while (existingCodes.has(candidateCode.toUpperCase())) {
+                counter++;
+                candidateCode = 'P' + counter;
+            }
+            mntModalRatesDraft.push({
+                id: 'rate_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                code: candidateCode,
+                name: '',
+                detail: '',
+                price: 30,
+                contractedHours: 0
+            });
+            mntRenderRatesModalRows();
+            const lastIdx = mntModalRatesDraft.length - 1;
+            setTimeout(() => document.getElementById(`mntRateName_${lastIdx}`)?.focus(), 40);
+        }
+
+        function mntRemoveRateRowInModal(idx) {
+            mntSyncModalDraftFromInputs();
+            if (mntModalRatesDraft.length <= 1) return;
+            mntModalRatesDraft.splice(idx, 1);
+            mntRenderRatesModalRows();
+        }
+
+        function mntEditContractRates() {
+            const client = mntGetCurrentClient();
+            if (!client) return;
+            const titleEl = document.getElementById('mntRatesModalContractName');
+            if (titleEl) titleEl.textContent = client.name;
+            mntModalRatesDraft = JSON.parse(JSON.stringify(client.ratesList || []));
+            mntRenderRatesModalRows();
+            document.getElementById('mntRatesModal').classList.remove('hidden');
+        }
+
+        function closeMntRatesModal() {
+            document.getElementById('mntRatesModal').classList.add('hidden');
+        }
+
+        function saveMntRatesModal(e) {
+            e.preventDefault();
+            const client = mntGetCurrentClient();
+            if (!client) return;
+            mntSyncModalDraftFromInputs();
+
+            const cleaned = mntModalRatesDraft
+                .filter(r => (r.code || '').trim() && (r.name || '').trim())
+                .map(r => ({
+                    id: r.id,
+                    code: r.code.trim().toUpperCase(),
+                    name: r.name.trim(),
+                    detail: r.detail || '',
+                    price: Math.max(0, parseFloat(r.price) || 0),
+                    contractedHours: Math.max(0, parseFloat(r.contractedHours) || 0)
+                }));
+
+            if (cleaned.length === 0) {
+                alert('Debe haber al menos una tarifa válida con código y descripción.');
+                return;
+            }
+
+            client.ratesList = cleaned;
+            mntSaveState();
+            closeMntRatesModal();
+            mntUpdateApp();
+            if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+            showToast('Tarifas del contrato actualizadas');
+        }
+
+        function mntUpdateLiveFormTotal() {
+            const client = mntGetCurrentClient();
+            const totalEl = document.getElementById('mnt-live-total');
+            const hoursEl = document.getElementById('mnt-live-hours');
+            const grid = document.getElementById('mnt-form-rates-grid');
+            if (!client || !totalEl || !hoursEl || !grid) return;
+
+            let sumH = 0;
+            let sumEur = 0;
+            const rateMap = new Map((client.ratesList || []).map(r => [r.id, r]));
+
+            grid.querySelectorAll('input[data-rate-id]').forEach(inp => {
+                const rId = inp.getAttribute('data-rate-id');
+                const h = parseFloat(inp.value) || 0;
+                const rateObj = rateMap.get(rId);
+                const price = rateObj ? (parseFloat(rateObj.price) || 0) : 0;
+                sumH += h;
+                sumEur += h * price;
+            });
+
+            hoursEl.textContent = sumH;
+            totalEl.textContent = mntFormatCurrency(sumEur);
+        }
+
+        function mntGetContractAlerts() {
+            const state = mntLoadState();
+            const alerts = [];
+            (state.clients || []).forEach(c => {
+                mntNormalizeClient(c);
+                let totalUsed = 0;
+                const hSum = {};
+                (c.ratesList || []).forEach(r => { hSum[r.id] = 0; });
+
+                (c.entries || []).forEach(e => {
+                    const hMap = mntGetEntryHoursMap(e);
+                    Object.keys(hMap).forEach(rId => {
+                        const h = parseFloat(hMap[rId]) || 0;
+                        if (hSum[rId] === undefined) hSum[rId] = 0;
+                        hSum[rId] += h;
+                    });
+                    totalUsed += mntComputeEntryCost(c, e);
+                });
+
+                const initB = parseFloat(c.initialBudget) || 0;
+                const remB = initB - totalUsed;
+                if (initB > 0) {
+                    const pctRem = (remB / initB) * 100;
+                    if (remB < 0) {
+                        alerts.push({
+                            contractId: c.id,
+                            contractName: c.name,
+                            severity: 'critical',
+                            text: `Presupuesto excedido en ${mntFormatCurrency(Math.abs(remB))} (Consumido: ${mntFormatCurrency(totalUsed)} de ${mntFormatCurrency(initB)})`
+                        });
+                    } else if (pctRem <= 15) {
+                        alerts.push({
+                            contractId: c.id,
+                            contractName: c.name,
+                            severity: 'warning',
+                            text: `Queda menos del 15% de bolsa (${pctRem.toFixed(1)}% restante: ${mntFormatCurrency(remB)})`
+                        });
+                    }
+                }
+
+                (c.ratesList || []).forEach(r => {
+                    const contracted = parseFloat(r.contractedHours) || 0;
+                    const used = hSum[r.id] || 0;
+                    if (contracted > 0 && used > contracted) {
+                        alerts.push({
+                            contractId: c.id,
+                            contractName: c.name,
+                            severity: 'critical',
+                            text: `Tarifa ${r.code} (${r.name}) ha superado las horas contratadas (${used} h de ${contracted} h)`
+                        });
+                    }
+                });
+            });
+            return alerts;
+        }
+
+        function mntOpenContractFromAlert(contractId) {
+            mntAppState = mntLoadState();
+            mntAppState.currentClientId = contractId;
+            mntSaveState();
+            switchTab('mantenimiento');
+        }
+
+        function mntFormatEntryHoursBadges(client, entry) {
+            const hMap = mntGetEntryHoursMap(entry);
+            const parts = [];
+            const knownIds = new Set();
+            (client.ratesList || []).forEach(r => {
+                knownIds.add(r.id);
+                const h = parseFloat(hMap[r.id]) || 0;
+                if (h > 0) {
+                    parts.push(`<span class="inline-block px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700 font-bold text-[10px]">${escapeHtml(r.code)}: ${h}h</span>`);
+                }
+            });
+            // Por si algún parte conserva horas de una tarifa antigua
+            Object.keys(hMap).forEach(k => {
+                if (!knownIds.has(k) && (parseFloat(hMap[k]) || 0) > 0) {
+                    parts.push(`<span class="inline-block px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-[10px]">${escapeHtml(k.toUpperCase())}: ${hMap[k]}h</span>`);
+                }
+            });
+            return parts.length > 0 ? `<div class="flex flex-wrap gap-1">${parts.join('')}</div>` : '<span class="text-gray-400">-</span>';
+        }
+
+        function mntFormatEntryHoursPlain(client, entry) {
+            const hMap = mntGetEntryHoursMap(entry);
+            const parts = [];
+            const knownIds = new Set();
+            (client.ratesList || []).forEach(r => {
+                knownIds.add(r.id);
+                const h = parseFloat(hMap[r.id]) || 0;
+                if (h > 0) parts.push(`${r.code}: ${h}h`);
+            });
+            Object.keys(hMap).forEach(k => {
+                if (!knownIds.has(k) && (parseFloat(hMap[k]) || 0) > 0) {
+                    parts.push(`${k.toUpperCase()}: ${hMap[k]}h`);
+                }
+            });
+            return parts.length > 0 ? parts.join(' · ') : '-';
+        }
+
+        function mntPrintSummaryReport() {
+            const client = mntGetCurrentClient();
+            if (!client) return;
+            const rates = client.ratesList || [];
+            const search = (document.getElementById('mnt-table-search')?.value || '').toLowerCase();
+            const entries = client.entries || [];
+            const filtered = entries.filter(e =>
+                (e.concept && e.concept.toLowerCase().includes(search)) ||
+                (e.workerNames && e.workerNames.toLowerCase().includes(search)) ||
+                (e.date && e.date.includes(search))
+            );
+
+            let totalUsedAll = 0;
+            const hSummaryAll = {};
+            rates.forEach(r => { hSummaryAll[r.id] = 0; });
+            entries.forEach(e => {
+                const hMap = mntGetEntryHoursMap(e);
+                Object.keys(hMap).forEach(rId => {
+                    if (hSummaryAll[rId] === undefined) hSummaryAll[rId] = 0;
+                    hSummaryAll[rId] += (parseFloat(hMap[rId]) || 0);
+                });
+                totalUsedAll += mntComputeEntryCost(client, e);
+            });
+            const remainingBudget = client.initialBudget - totalUsedAll;
+
+            const ratesRowsHtml = rates.map(r => {
+                const usedH = hSummaryAll[r.id] || 0;
+                const contracted = parseFloat(r.contractedHours) || 0;
+                const remH = contracted - usedH;
+                const cost = usedH * (parseFloat(r.price) || 0);
+                return `
+                    <tr>
+                        <td class="border border-slate-400 px-2 py-1 font-bold uppercase">${escapeHtml(r.code)}</td>
+                        <td class="border border-slate-400 px-2 py-1">${escapeHtml(r.name)}</td>
+                        <td class="border border-slate-400 px-2 py-1 text-right">${r.price} €/h</td>
+                        <td class="border border-slate-400 px-2 py-1 text-right">${contracted ? contracted + ' h' : '-'}</td>
+                        <td class="border border-slate-400 px-2 py-1 text-right font-bold">${usedH} h</td>
+                        <td class="border border-slate-400 px-2 py-1 text-right">${contracted ? remH + ' h' : '-'}</td>
+                        <td class="border border-slate-400 px-2 py-1 text-right font-bold">${mntFormatCurrency(cost)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            let filteredSumEur = 0;
+            const entriesRowsHtml = filtered.map(e => {
+                const rowTotal = mntComputeEntryCost(client, e);
+                filteredSumEur += rowTotal;
+                return `
+                    <tr>
+                        <td class="border border-slate-300 px-2 py-1 whitespace-nowrap">${escapeHtml(e.date)}</td>
+                        <td class="border border-slate-300 px-2 py-1">
+                            <div class="font-semibold">${escapeHtml(e.concept)}</div>
+                            ${e.workerNames ? `<div class="text-[9px] text-slate-600">${e.workers ? e.workers + ' pers. · ' : ''}${escapeHtml(e.workerNames)}</div>` : ''}
+                        </td>
+                        <td class="border border-slate-300 px-2 py-1 whitespace-nowrap font-semibold">${escapeHtml(mntFormatEntryHoursPlain(client, e))}</td>
+                        <td class="border border-slate-300 px-2 py-1 text-right font-bold whitespace-nowrap">${mntFormatCurrency(rowTotal)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const reportEl = document.getElementById('mnt-printable-report');
+            if (!reportEl) return;
+            const todayStr = new Date().toLocaleDateString('es-ES');
+            reportEl.innerHTML = `
+                <div class="border-b-2 border-slate-900 pb-2 mb-3 flex justify-between items-end">
+                    <div>
+                        <div class="text-[10px] font-bold uppercase text-emerald-800 tracking-wider">Sol i Vent Paisajes S.L.</div>
+                        <h1 class="text-base font-black uppercase text-slate-900">Informe de Estado y Trabajos de Mantenimiento</h1>
+                        <div class="text-xs font-bold text-slate-700 mt-0.5">${escapeHtml(client.name)}</div>
+                    </div>
+                    <div class="text-right text-[10px] text-slate-600">
+                        <div>Fecha emisión: <strong>${todayStr}</strong></div>
+                        ${search ? `<div>Filtro aplicado: <strong>"${escapeHtml(search)}"</strong></div>` : ''}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mb-3 text-xs">
+                    <div class="border border-slate-400 p-2 rounded">
+                        <span class="text-[9px] uppercase font-bold text-slate-500 block">Presupuesto Inicial</span>
+                        <span class="text-sm font-black text-slate-900">${mntFormatCurrency(client.initialBudget)}</span>
+                    </div>
+                    <div class="border border-slate-400 p-2 rounded">
+                        <span class="text-[9px] uppercase font-bold text-slate-500 block">Total Consumido</span>
+                        <span class="text-sm font-black text-amber-700">${mntFormatCurrency(totalUsedAll)}</span>
+                    </div>
+                    <div class="border border-slate-400 p-2 rounded">
+                        <span class="text-[9px] uppercase font-bold text-slate-500 block">Presupuesto Restante</span>
+                        <span class="text-sm font-black ${remainingBudget < 0 ? 'text-red-700' : 'text-emerald-800'}">${mntFormatCurrency(remainingBudget)}</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h3 class="text-[10px] font-bold uppercase text-slate-800 mb-1">Desglose por Tarifas (Global del Contrato):</h3>
+                    <table class="w-full border-collapse border border-slate-400 text-[10px]">
+                        <thead>
+                            <tr class="bg-slate-100">
+                                <th class="border border-slate-400 px-2 py-1 text-left">Tarifa</th>
+                                <th class="border border-slate-400 px-2 py-1 text-left">Concepto</th>
+                                <th class="border border-slate-400 px-2 py-1 text-right">Precio</th>
+                                <th class="border border-slate-400 px-2 py-1 text-right">Contratadas</th>
+                                <th class="border border-slate-400 px-2 py-1 text-right">Utilizadas</th>
+                                <th class="border border-slate-400 px-2 py-1 text-right">Restantes</th>
+                                <th class="border border-slate-400 px-2 py-1 text-right">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>${ratesRowsHtml}</tbody>
+                    </table>
+                </div>
+
+                <div>
+                    <h3 class="text-[10px] font-bold uppercase text-slate-800 mb-1">Histórico de Trabajos Realizados (${filtered.length} partes):</h3>
+                    <table class="w-full border-collapse border border-slate-300 text-[10px]">
+                        <thead>
+                            <tr class="bg-slate-100">
+                                <th class="border border-slate-300 px-2 py-1 text-left">Fecha</th>
+                                <th class="border border-slate-300 px-2 py-1 text-left">Concepto / Operarios</th>
+                                <th class="border border-slate-300 px-2 py-1 text-left">Desglose Horas</th>
+                                <th class="border border-slate-300 px-2 py-1 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${entriesRowsHtml || '<tr><td colspan="4" class="border border-slate-300 px-2 py-3 text-center text-slate-400">Sin registros</td></tr>'}
+                            <tr class="bg-slate-100 font-bold">
+                                <td colspan="3" class="border border-slate-300 px-2 py-1 text-right uppercase">Total listado (${filtered.length} partes):</td>
+                                <td class="border border-slate-300 px-2 py-1 text-right">${mntFormatCurrency(filteredSumEur)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.body.classList.add('printing-maint-report');
+            const cleanup = () => {
+                document.body.classList.remove('printing-maint-report');
+                window.removeEventListener('afterprint', cleanup);
+            };
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(() => {
+                window.print();
+                setTimeout(cleanup, 1000);
+            }, 80);
+        }
+
+        function mntRenderTable() {
+            const client = mntGetCurrentClient();
+            const tbody = document.getElementById('mnt-entries-table-body');
+            const footerEl = document.getElementById('mnt-entries-pagination-footer');
+            const countBadge = document.getElementById('mnt-entries-count-badge');
+            if (!tbody) return;
+            const search = (document.getElementById('mnt-table-search')?.value || '').toLowerCase();
+
+            tbody.innerHTML = '';
+            const entries = client.entries || [];
+            const filtered = entries.filter(e =>
+                (e.concept && e.concept.toLowerCase().includes(search)) ||
+                (e.workerNames && e.workerNames.toLowerCase().includes(search)) ||
+                (e.date && e.date.includes(search))
+            );
+
+            if (countBadge) countBadge.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                if (footerEl) footerEl.innerHTML = '';
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400">No hay partes registrados con ese criterio</td></tr>`;
+                return;
+            }
+
+            const pageInfo = paginateSuiteList('mantenimientoEntries', filtered);
+            if (footerEl) {
+                footerEl.innerHTML = buildSuitePaginationFooterHtml('mantenimientoEntries', pageInfo, 'partes');
+            }
+
+            pageInfo.visibleItems.forEach((e) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/40 transition border-b border-gray-100 dark:border-gray-700';
+                const rowCost = mntComputeEntryCost(client, e);
+                tr.innerHTML = `
+                    <td class="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap font-medium">${escapeHtml(e.date)}</td>
+                    <td class="px-3 py-2 text-gray-800 dark:text-gray-100">
+                        <p class="font-medium line-clamp-2" title="${escapeHtml(e.concept)}">${escapeHtml(e.concept)}</p>
+                        <p class="text-[10px] text-gray-500 dark:text-gray-400">${e.workers ? e.workers + ' pers. - ' : ''}${escapeHtml(e.workerNames || '')}</p>
+                    </td>
+                    <td class="px-3 py-2">${mntFormatEntryHoursBadges(client, e)}</td>
+                    <td class="px-3 py-2 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap">${mntFormatCurrency(rowCost)}</td>
+                    <td class="px-2 py-2 text-center whitespace-nowrap">
+                        <button type="button" onclick="mntEditEntry('${escapeJs(e.id)}')" class="text-gray-500 hover:text-emerald-600 p-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        <button type="button" onclick="mntDeleteEntry('${escapeJs(e.id)}')" class="text-gray-500 hover:text-red-600 p-1 ml-1" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function mntSaveEntry(e) {
+            e.preventDefault();
+            const client = mntGetCurrentClient();
+            const id = document.getElementById('mnt-entry-id').value;
+            const date = document.getElementById('mnt-form-date').value;
+            const concept = document.getElementById('mnt-form-concept').value;
+            const workers = parseInt(document.getElementById('mnt-form-workers').value, 10) || 1;
+            const workerNames = document.getElementById('mnt-form-worker-names').value;
+
+            const hoursByRate = {};
+            let total = 0;
+            const rateMap = new Map((client.ratesList || []).map(r => [r.id, r]));
+            const grid = document.getElementById('mnt-form-rates-grid');
+            if (grid) {
+                grid.querySelectorAll('input[data-rate-id]').forEach(inp => {
+                    const rId = inp.getAttribute('data-rate-id');
+                    const h = parseFloat(inp.value) || 0;
+                    if (h > 0) {
+                        hoursByRate[rId] = h;
+                        const rObj = rateMap.get(rId);
+                        total += h * (rObj ? (parseFloat(rObj.price) || 0) : 0);
+                    }
+                });
+            }
+
+            if (!client.entries) client.entries = [];
+
+            if (id) {
+                const index = client.entries.findIndex(it => it.id === id);
+                if (index !== -1) {
+                    client.entries[index] = { id, date, concept, workers, workerNames, hoursByRate, total };
+                }
+            } else {
+                client.entries.unshift({
+                    id: 'ent_' + Date.now(),
+                    date,
+                    concept,
+                    workers,
+                    workerNames,
+                    hoursByRate,
+                    total
+                });
+            }
+
+            mntSaveState();
+            mntResetForm();
+            mntUpdateApp();
+            if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+            showToast(id ? 'Parte actualizado' : 'Parte registrado');
+        }
+
+        function mntEditEntry(id) {
+            const client = mntGetCurrentClient();
+            const entry = (client.entries || []).find(it => it.id === id);
+            if (!entry) return;
+
+            document.getElementById('mnt-entry-id').value = entry.id;
+            document.getElementById('mnt-form-date').value = entry.date;
+            document.getElementById('mnt-form-concept').value = entry.concept;
+            document.getElementById('mnt-form-workers').value = entry.workers || 1;
+            document.getElementById('mnt-form-worker-names').value = entry.workerNames || '';
+
+            const hMap = mntGetEntryHoursMap(entry);
+            mntRenderFormRateInputs(hMap);
+
+            document.getElementById('mnt-btn-save').innerHTML = '<i class="fa-solid fa-check"></i> Actualizar Parte';
+            mntUpdateLiveFormTotal();
+        }
+
+        function mntDeleteEntry(id) {
+            if (!confirm('¿Deseas eliminar este registro de parte?')) return;
+            const client = mntGetCurrentClient();
+            client.entries = (client.entries || []).filter(it => it.id !== id);
+            mntSaveState();
+            mntUpdateApp();
+            if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+            showToast('Parte eliminado');
+        }
+
+        function mntResetForm() {
+            document.getElementById('mnt-work-form').reset();
+            document.getElementById('mnt-entry-id').value = '';
+            document.getElementById('mnt-form-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('mnt-btn-save').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Parte';
+            mntRenderFormRateInputs({});
+        }
+
+        function mntExportBackupJSON() {
+            const dataStr = JSON.stringify(mntAppState, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+            const now = new Date().toISOString().split('T')[0];
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Copia_Seguridad_Mantenimiento_${now}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            showToast('Respaldo de mantenimiento descargado');
+        }
+
+        function mntTriggerImportJSON() {
+            const inp = document.getElementById('mnt-import-file-input');
+            inp.value = '';
+            inp.click();
+        }
+
+        function mntHandleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!importedData.clients || !Array.isArray(importedData.clients) || importedData.clients.length === 0) {
+                        alert('El archivo seleccionado no tiene el formato válido de copia de seguridad.');
+                        return;
+                    }
+
+                    const mode = confirm(
+                        '¿Deseas REEMPLAZAR todos tus datos actuales de mantenimiento por los del archivo?\n\n' +
+                        '• Pulsa ACEPTAR para sobreescribir completamente con el archivo.\n' +
+                        '• Pulsa CANCELAR para combinar (añadir los contratos del archivo sin borrar los tuyos).'
+                    );
+
+                    if (mode) {
+                        mntAppState = importedData;
+                    } else {
+                        importedData.clients.forEach(importedClient => {
+                            const existingIndex = mntAppState.clients.findIndex(c => c.id === importedClient.id);
+                            if (existingIndex !== -1) {
+                                mntAppState.clients[existingIndex] = importedClient;
+                            } else {
+                                mntAppState.clients.push(importedClient);
+                            }
+                        });
+                        if (importedData.currentClientId) {
+                            mntAppState.currentClientId = importedData.currentClientId;
+                        }
+                    }
+
+                    mntAppState.clients.forEach(mntNormalizeClient);
+                    mntSaveState();
+                    mntUpdateApp();
+                    if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
+                    showToast('Datos de mantenimiento importados con éxito');
+                } catch (err) {
+                    console.error(err);
+                    alert('Error al leer el archivo JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function mntExportCSV() {
+            const client = mntGetCurrentClient();
+            const rates = client.ratesList || [];
+            const rateHeaders = rates.map(r => `${r.code}(h)`).join(';');
+            let csv = `﻿Fecha;Concepto;Trabajadores;Operarios;${rateHeaders};Total(Euros)
+`;
+            (client.entries || []).forEach(e => {
+                const hMap = mntGetEntryHoursMap(e);
+                const rateVals = rates.map(r => parseFloat(hMap[r.id]) || 0).join(';');
+                const rowCost = mntComputeEntryCost(client, e);
+                csv += `"${e.date}";"${(e.concept || '').replace(/"/g, '""')}";"${e.workers || 1}";"${(e.workerNames || '').replace(/"/g, '""')}";${rateVals};${rowCost}
+`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Partes_${client.name.replace(/\s+/g, '_')}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            showToast('CSV exportado');
+        }
+
+        function mntSendSummaryByMail() {
+            const client = mntGetCurrentClient();
+            if (!client) return;
+            const totalUsed = (client.entries || []).reduce((acc, e) => acc + mntComputeEntryCost(client, e), 0);
+            const remaining = client.initialBudget - totalUsed;
+            const totalHours = (client.entries || []).reduce((acc, e) => {
+                const hMap = mntGetEntryHoursMap(e);
+                return acc + Object.values(hMap).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+            }, 0);
+            const body = 'Hola,\n\n' +
+                'Te comparto el estado actualizado del contrato "' + client.name + '":\n\n' +
+                '• Presupuesto inicial: ' + mntFormatCurrency(client.initialBudget) + '\n' +
+                '• Total consumido: ' + mntFormatCurrency(totalUsed) + ' (' + totalHours + ' horas registradas)\n' +
+                '• Presupuesto restante: ' + mntFormatCurrency(remaining) + '\n\n' +
+                'Un saludo,\nSol i Vent Paisajes S.L.';
+            if (typeof openSuiteMailCompose === 'function') {
+                openSuiteMailCompose({
+                    subject: `Estado bolsa de horas - ${client.name}`,
+                    body: body
+                });
+            }
+        }
+
+        function mntPrintControlSheet() {
+            const client = mntGetCurrentClient();
+            const sheetEl = document.getElementById('mnt-printable-sheet');
+            if (!client || !sheetEl) return;
+
+            const rates = client.ratesList || [];
+            const compactMode = rates.length > 5;
+            const rowPadClass = compactMode ? 'py-1' : 'py-2';
+            const obsHeightClass = rates.length > 6 ? 'h-24' : (rates.length > 4 ? 'h-32' : 'h-44');
+
+            const rowsHtml = rates.map(r => `
+                <tr>
+                    <td class="border border-slate-800 px-2 ${rowPadClass} text-center font-bold text-xs uppercase">${escapeHtml(r.code)}</td>
+                    <td class="border border-slate-800 px-3 ${rowPadClass}">
+                        <span class="font-bold block text-xs">${escapeHtml(r.name)}</span>
+                        ${r.detail ? `<span class="text-slate-600 text-[10px] block leading-tight">${escapeHtml(r.detail)}</span>` : ''}
+                    </td>
+                    <td class="border border-slate-800 px-2 ${rowPadClass} text-center text-sm font-bold"></td>
+                </tr>
+            `).join('');
+
+            sheetEl.innerHTML = `
+                <div class="border-b-2 border-slate-900 pb-2 mb-3">
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="flex-1">
+                            <h1 class="text-base font-black uppercase tracking-tight text-slate-900 leading-tight">
+                                HOJA DE CONTROL INTERNO DE HORAS<br>POR TIPO DE TRABAJO REALIZADO
+                            </h1>
+                            <p class="text-[10px] text-slate-600 italic mt-0.5">Anexo interno para grapar al albarán original del cliente</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block border-2 border-slate-900 px-2.5 py-1 font-bold text-xs uppercase">
+                                ${escapeHtml(client.name)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-slate-400 p-2 mb-3 text-xs grid grid-cols-3 gap-3">
+                    <div>
+                        <span class="font-bold text-[10px] uppercase text-slate-700 block">FECHA:</span>
+                        <div class="mt-1 text-slate-900 font-semibold border-b border-slate-300 h-5"></div>
+                    </div>
+                    <div>
+                        <span class="font-bold text-[10px] uppercase text-slate-700 block">Nº TRABAJADORES:</span>
+                        <div class="mt-1 text-slate-900 font-semibold border-b border-slate-300 h-5"></div>
+                    </div>
+                    <div>
+                        <span class="font-bold text-[10px] uppercase text-slate-700 block">OPERARIOS PARTICIPANTES:</span>
+                        <div class="mt-1 text-slate-900 font-semibold border-b border-slate-300 h-5"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h3 class="text-[11px] font-bold uppercase tracking-wider text-slate-800 mb-1">Desglose de horas según trabajo realizado:</h3>
+                    <table class="w-full border-collapse border border-slate-800 text-[11px]">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-800">
+                                <th class="border border-slate-800 px-2 py-1.5 text-center w-16 font-bold uppercase">CÓDIGO</th>
+                                <th class="border border-slate-800 px-3 py-1.5 text-left font-bold uppercase">TIPO DE TRABAJO / ACTIVIDAD</th>
+                                <th class="border border-slate-800 px-2 py-1.5 text-center w-32 font-bold uppercase">HORAS TRABAJADAS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                            <tr class="bg-slate-50 border-t-2 border-slate-900 font-bold">
+                                <td colspan="2" class="border border-slate-800 px-3 py-1 text-right text-[11px] uppercase tracking-wide">
+                                    Total horas registradas:
+                                </td>
+                                <td class="border border-slate-800 px-2 py-1 text-center text-sm"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mb-3">
+                    <span class="font-bold text-[10px] uppercase tracking-wider text-slate-800 block mb-0.5">Observaciones:</span>
+                    <div class="border border-slate-400 ${obsHeightClass} w-full rounded p-2"></div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <div class="text-center w-60">
+                        <div class="border-b border-slate-800 h-12 mb-1"></div>
+                        <p class="text-[10px] font-bold uppercase text-slate-800 tracking-wider">Firma Operario / Cuadrilla</p>
+                    </div>
+                </div>
+            `;
+
+            document.body.classList.add('printing-maint-sheet');
+            const cleanup = () => {
+                document.body.classList.remove('printing-maint-sheet');
+                window.removeEventListener('afterprint', cleanup);
+            };
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(() => {
+                window.print();
+                setTimeout(cleanup, 1000);
+            }, 80);
+        }
+
+
+        // =========================================================================
+        // BUSCADOR GLOBAL INSTANTÁNEO (CTRL + K)
+        // =========================================================================
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                openGlobalSearchModal();
+            } else if (e.key === 'Escape') {
+                const gs = document.getElementById('globalSearchModal');
+                if (gs && !gs.classList.contains('hidden')) closeGlobalSearchModal();
+            }
+        });
+
+        function openGlobalSearchModal() {
+            const modal = document.getElementById('globalSearchModal');
+            const inp = document.getElementById('globalSearchInput');
+            if (!modal || !inp) return;
+            modal.classList.remove('hidden');
+            inp.value = '';
+            runGlobalSuiteSearch();
+            setTimeout(() => inp.focus(), 40);
+        }
+
+        function closeGlobalSearchModal() {
+            const modal = document.getElementById('globalSearchModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function navigateFromGlobalSearch(tabKey, subAction = null, payload = '') {
+            closeGlobalSearchModal();
+            switchTab(tabKey);
+            setTimeout(() => {
+                if (subAction === 'contact_search') {
+                    const el = document.getElementById('contactSearch');
+                    if (el) { el.value = payload; resetSuiteListPage('contacts'); renderContacts(); }
+                } else if (subAction === 'platform_search') {
+                    const el = document.getElementById('platformSearch');
+                    if (el) { el.value = payload; renderPlatforms(); }
+                } else if (subAction === 'expedition_search') {
+                    const el = document.getElementById('expeditionSearchInput');
+                    if (el) { el.value = payload; onExpeditionSearchInput(); }
+                } else if (subAction === 'note_edit') {
+                    if (typeof editNote === 'function') editNote(payload);
+                } else if (subAction === 'arbor_edit') {
+                    if (typeof openArborParteModal === 'function') openArborParteModal(payload);
+                } else if (subAction === 'maq_cat') {
+                    switchMaqSubTool('cat_maq');
+                    if (payload && typeof editMaqCatalogItem === 'function') editMaqCatalogItem(payload);
+                } else if (subAction === 'mnt_contract') {
+                    mntSwitchClient(payload);
+                }
+            }, 60);
+        }
+
+        function runGlobalSuiteSearch() {
+            const q = (document.getElementById('globalSearchInput')?.value || '').toLowerCase().trim();
+            const container = document.getElementById('globalSearchResults');
+            if (!container) return;
+
+            if (!q) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        Escribe cualquier término para buscar simultáneamente en <strong>Contactos, Plataformas, Expediciones, Notas, ArborSystems, Maquinaria y Mantenimiento</strong>.
+                    </div>
+                `;
+                return;
+            }
+
+            const sections = [];
+
+            // 1. Contactos
+            const contacts = (typeof getContacts === 'function' ? getContacts() : []).filter(c =>
+                [c.name, c.company, c.phone, c.phone2, c.email, c.address, c.notes].some(v => v && String(v).toLowerCase().includes(q))
+            ).slice(0, 5);
+            if (contacts.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-brand-600 flex items-center gap-1.5"><i class="fa-solid fa-address-book"></i> Agenda de Contactos (${contacts.length})</div>
+                        ${contacts.map(c => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">${escapeHtml(c.name)} ${c.company ? `<span class="text-gray-400 font-normal">· ${escapeHtml(c.company)}</span>` : ''}</div>
+                                    <div class="text-[11px] text-gray-500">${escapeHtml(c.phone || '')} ${c.email ? '· ' + escapeHtml(c.email) : ''}</div>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    ${c.phone ? `<button type="button" onclick="copyText('${escapeJs(c.phone)}', 'Teléfono copiado')" class="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-bold text-[10px]">Copiar Tlf</button>` : ''}
+                                    <button type="button" onclick="navigateFromGlobalSearch('contacts', 'contact_search', '${escapeJs(c.name)}')" class="px-2.5 py-1 bg-brand-600 text-white rounded-lg font-bold text-[10px]">Abrir</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            // 2. Plataformas
+            const platforms = (typeof getPlatforms === 'function' ? getPlatforms() : []).filter(p =>
+                [p.name, p.user, p.group, p.notes, p.url].some(v => v && String(v).toLowerCase().includes(q))
+            ).slice(0, 5);
+            if (platforms.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-indigo-600 flex items-center gap-1.5"><i class="fa-solid fa-key"></i> Acceso a Plataformas (${platforms.length})</div>
+                        ${platforms.map(p => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">${escapeHtml(p.name)} <span class="text-[10px] text-gray-400">(${escapeHtml(p.group || 'General')})</span></div>
+                                    <div class="text-[11px] text-gray-500 font-mono truncate">${escapeHtml(p.user || '')}</div>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    ${p.pass ? `<button type="button" onclick="copyPlatformPassById('${escapeJs(p.id)}')" class="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-bold text-[10px]">Copiar Clave</button>` : ''}
+                                    <button type="button" onclick="navigateFromGlobalSearch('platforms', 'platform_search', '${escapeJs(p.name)}')" class="px-2.5 py-1 bg-brand-600 text-white rounded-lg font-bold text-[10px]">Abrir</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            // 3. Expediciones
+            const exps = (typeof getExpeditionHistory === 'function' ? getExpeditionHistory() : []).filter(e =>
+                [e.docNum, e.clientName, e.transport, e.bultos, e.observaciones].some(v => v && String(v).toLowerCase().includes(q))
+            ).slice(0, 5);
+            if (exps.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-amber-600 flex items-center gap-1.5"><i class="fa-solid fa-truck-fast"></i> Expediciones y Albaranes (${exps.length})</div>
+                        ${exps.map(e => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">Alb. ${escapeHtml(e.docNum)} · ${escapeHtml(e.clientName)}</div>
+                                    <div class="text-[11px] text-gray-500">${escapeHtml(e.date)} · ${escapeHtml(e.transport)} (${escapeHtml(e.bultos || '')})</div>
+                                </div>
+                                <button type="button" onclick="navigateFromGlobalSearch('convert', 'expedition_search', '${escapeJs(e.docNum)}')" class="px-2.5 py-1 bg-brand-600 text-white rounded-lg font-bold text-[10px] flex-shrink-0">Ver</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            // 4. Partes ArborSystems
+            const arbors = (typeof getArborPartes === 'function' ? getArborPartes() : []).filter(p =>
+                [p.numParte, p.cliente, p.equipo, p.tecnico, p.descRep].some(v => v && String(v).toLowerCase().includes(q))
+            ).slice(0, 5);
+            if (arbors.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-emerald-600 flex items-center gap-1.5"><i class="fa-solid fa-syringe"></i> Reparaciones ArborSystems (${arbors.length})</div>
+                        ${arbors.map(p => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">Parte ${escapeHtml(p.numParte)} · ${escapeHtml(p.cliente)}</div>
+                                    <div class="text-[11px] text-gray-500 truncate">${escapeHtml(p.equipo || '')}</div>
+                                </div>
+                                <button type="button" onclick="navigateFromGlobalSearch('arbor', 'arbor_edit', '${escapeJs(p.id)}')" class="px-2.5 py-1 bg-brand-600 text-white rounded-lg font-bold text-[10px] flex-shrink-0">Abrir Parte</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            // 5. Maquinaria y Vehículos
+            const maqs = (typeof getMaqCatalog === 'function' ? getMaqCatalog() : []).filter(m =>
+                [m.code, m.name, m.notes].some(v => v && String(v).toLowerCase().includes(q))
+            ).slice(0, 5);
+            if (maqs.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-orange-600 flex items-center gap-1.5"><i class="fa-solid fa-tractor"></i> Maquinaria y Vehículos (${maqs.length})</div>
+                        ${maqs.map(m => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">[${escapeHtml(m.code)}] ${escapeHtml(m.name)}</div>
+                                    <div class="text-[11px] text-gray-500 truncate">${m.itvDate ? 'ITV: ' + m.itvDate + ' ' : ''}${m.insuranceDate ? '· Seguro: ' + m.insuranceDate : ''}</div>
+                                </div>
+                                <button type="button" onclick="navigateFromGlobalSearch('maquinaria', 'maq_cat', '${escapeJs(m.id)}')" class="px-2.5 py-1 bg-brand-600 text-white rounded-lg font-bold text-[10px] flex-shrink-0">Ver Ficha</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            // 6. Control de Horas de Mantenimiento (Contratos y Partes)
+            const mntState = typeof mntLoadState === 'function' ? mntLoadState() : { clients: [] };
+            const mntMatches = [];
+            (mntState.clients || []).forEach(c => {
+                if (c.name && c.name.toLowerCase().includes(q)) {
+                    mntMatches.push({ clientId: c.id, title: c.name, sub: `Contrato · Presupuesto: ${mntFormatCurrency(c.initialBudget)}` });
+                }
+                (c.entries || []).forEach(e => {
+                    if ([e.concept, e.workerNames, e.date].some(v => v && String(v).toLowerCase().includes(q))) {
+                        mntMatches.push({ clientId: c.id, title: `${c.name} (${e.date})`, sub: e.concept });
+                    }
+                });
+            });
+            if (mntMatches.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-emerald-700 flex items-center gap-1.5"><i class="fa-solid fa-tree"></i> Horas de Mantenimiento (${mntMatches.slice(0,5).length})</div>
+                        ${mntMatches.slice(0, 5).map(item => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">${escapeHtml(item.title)}</div>
+                                    <div class="text-[11px] text-gray-500 truncate">${escapeHtml(item.sub)}</div>
+                                </div>
+                                <button type="button" onclick="navigateFromGlobalSearch('mantenimiento', 'mnt_contract', '${escapeJs(item.clientId)}')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[10px] flex-shrink-0">Abrir Bolsa</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            // 7. Notas y Avisos
+            const notes = (typeof getNotes === 'function' ? getNotes() : []).filter(n =>
+                [n.title, n.content].some(v => v && String(v).toLowerCase().includes(q))
+            ).slice(0, 5);
+            if (notes.length > 0) {
+                sections.push(`
+                    <div class="space-y-1.5">
+                        <div class="text-[11px] font-bold uppercase text-purple-600 flex items-center gap-1.5"><i class="fa-solid fa-calendar-check"></i> Notas y Recordatorios (${notes.length})</div>
+                        ${notes.map(n => `
+                            <div class="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-200 dark:border-gray-600">
+                                <div class="min-w-0">
+                                    <div class="font-bold text-gray-900 dark:text-white truncate">${escapeHtml(n.title)}</div>
+                                    <div class="text-[11px] text-gray-500 truncate">${escapeHtml(n.content || '')}</div>
+                                </div>
+                                <button type="button" onclick="navigateFromGlobalSearch('notes', 'note_edit', '${escapeJs(n.id)}')" class="px-2.5 py-1 bg-brand-600 text-white rounded-lg font-bold text-[10px] flex-shrink-0">Editar Nota</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            }
+
+            container.innerHTML = sections.length > 0
+                ? sections.join('')
+                : `<div class="text-center py-8 text-gray-400">No se han encontrado coincidencias para <strong>"${escapeHtml(q)}"</strong> en ningún módulo.</div>`;
+        }
+
+        // =========================================================================
+        // PUENTES DIRECTOS DESDE CORREO CORPORATIVO A MÓDULOS DE GESTIÓN
+        // =========================================================================
+        async function fetchGmailAttachmentAsFile(msgId, attachmentId, fileName, mimeType) {
+            const data = await gmailApiFetch(`/messages/${msgId}/attachments/${encodeURIComponent(attachmentId)}`);
+            let b64 = (data.data || '').replace(/-/g, '+').replace(/_/g, '/');
+            while (b64.length % 4) b64 += '=';
+            const byteChars = atob(b64);
+            const byteArr = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+            return new File([byteArr], fileName || 'documento.pdf', { type: mimeType || 'application/pdf' });
+        }
+
+        async function routeMailPdfAttachment(msgId, attachmentId, fileName, targetModule) {
+            showToast(`Cargando "${fileName}" en el módulo...`);
+            try {
+                const file = await fetchGmailAttachmentAsFile(msgId, attachmentId, fileName, 'application/pdf');
+                if (targetModule === 'albaran') {
+                    switchTab('convert');
+                    if (typeof procesarAlbaranes === 'function') await procesarAlbaranes([file]);
+                } else if (targetModule === 'arbor') {
+                    switchTab('arbor');
+                    switchArborSubTool('arbor');
+                    if (typeof handleArborPresupUpload === 'function') await handleArborPresupUpload([file]);
+                } else if (targetModule === 'editpdf') {
+                    switchTab('merge');
+                    switchPdfSubTool('edit');
+                    if (typeof handleEditPdfFileSelected === 'function') await handleEditPdfFileSelected(file);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error al transferir el adjunto: ' + err.message);
+            }
+        }
+
+        function saveMailSenderToContacts(msgId) {
+            if (!activeMailThreadData || !Array.isArray(activeMailThreadData.messages)) return;
+            const msg = activeMailThreadData.messages.find(m => m.id === msgId) || activeMailThreadData.messages[0];
+            if (!msg) return;
+
+            const fromRaw = msg.from || '';
+            const emailMatch = fromRaw.match(/<([^>]+)>/);
+            const email = emailMatch ? emailMatch[1].trim() : fromRaw.trim();
+            const name = emailMatch ? fromRaw.replace(/<[^>]+>/, '').replace(/"/g, '').trim() : email.split('@')[0];
+            const phoneMatch = (msg.bodyPlain || '').match(/(?:\+34[\s.-]?)?[6789]\d{2}[\s.-]?\d{2,3}[\s.-]?\d{2,3}/);
+
+            switchTab('contacts');
+            openContactModal();
+            setTimeout(() => {
+                document.getElementById('contactName').value = name || '';
+                document.getElementById('contactEmail').value = email || '';
+                if (phoneMatch) document.getElementById('contactPhone').value = phoneMatch[0].trim();
+                document.getElementById('contactNotes').value = `Importado desde correo: "${msg.subject || ''}"`;
+            }, 40);
+        }
+
+        function createNoteFromMailMessage(msgId) {
+            if (!activeMailThreadData || !Array.isArray(activeMailThreadData.messages)) return;
+            const msg = activeMailThreadData.messages.find(m => m.id === msgId) || activeMailThreadData.messages[0];
+            if (!msg) return;
+
+            switchTab('notes');
+            openNoteModal();
+            setTimeout(() => {
+                document.getElementById('noteTitle').value = `Correo: ${msg.subject || '(Sin asunto)'}`;
+                const snippet = (msg.bodyPlain || '').trim().slice(0, 350);
+                document.getElementById('noteContent').value = `De: ${msg.from}
+
+${snippet}`;
+                const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                tomorrow.setHours(9, 0, 0, 0);
+                const localIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                document.getElementById('noteDateTime').value = localIso;
+            }, 60);
+        }
+
+        // =========================================================================
+        // RESUMEN Y ESTADÍSTICAS DEL MES EN PANEL DIARIO
+        // =========================================================================
+        function toggleHomeMonthlyStats() {
+            const body = document.getElementById('homeMonthlyStatsBody');
+            const chev = document.getElementById('homeMonthlyStatsChevron');
+            const picker = document.getElementById('homeStatsMonthPicker');
+            if (!body) return;
+            const willShow = body.classList.contains('hidden');
+            body.classList.toggle('hidden', !willShow);
+            if (chev) chev.classList.toggle('rotate-180', willShow);
+            if (willShow) {
+                if (picker && !picker.value) {
+                    const now = new Date();
+                    picker.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                }
+                renderHomeMonthlyStats();
+            }
+        }
+
+        function renderHomeMonthlyStats() {
+            const grid = document.getElementById('homeMonthlyStatsGrid');
+            const picker = document.getElementById('homeStatsMonthPicker');
+            const badge = document.getElementById('homeMonthlyStatsPeriodBadge');
+            if (!grid) return;
+
+            const now = new Date();
+            const ym = (picker && picker.value) ? picker.value : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const [yearStr, monthStr] = ym.split('-');
+            const targetYear = parseInt(yearStr, 10);
+            const targetMonth = parseInt(monthStr, 10); // 1..12
+
+            if (badge) badge.textContent = `${monthStr}/${yearStr}`;
+
+            // 1. Expediciones del mes (formato fecha DD/MM/YYYY)
+            const exps = (typeof getExpeditionHistory === 'function' ? getExpeditionHistory() : []).filter(e => {
+                if (!e.date) return false;
+                const p = e.date.split('/');
+                return p.length === 3 && parseInt(p[1], 10) === targetMonth && parseInt(p[2], 10) === targetYear;
+            });
+            const byAgency = {};
+            exps.forEach(e => {
+                const ag = e.transport || 'Otros';
+                byAgency[ag] = (byAgency[ag] || 0) + 1;
+            });
+            const agencyLines = Object.keys(byAgency).length > 0
+                ? Object.entries(byAgency).map(([k, v]) => `<span class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-brand-700 dark:text-brand-300 font-bold text-[11px]">${escapeHtml(k)}: ${v}</span>`).join(' ')
+                : '<span class="text-gray-400 text-[11px]">Sin expediciones este mes</span>';
+
+            // 2. Reparaciones ArborSystems (Global abiertas vs cerradas)
+            const arbors = typeof getArborPartes === 'function' ? getArborPartes() : [];
+            const arborClosed = arbors.filter(p => Boolean(p.tecnico || p.fechaRep || p.descRep)).length;
+            const arborOpen = arbors.length - arborClosed;
+
+            // 3. Horas e importe de mantenimiento imputados en el mes (formato fecha YYYY-MM-DD)
+            const mntState = typeof mntLoadState === 'function' ? mntLoadState() : { clients: [] };
+            let mntTotalMonthEur = 0;
+            let mntTotalMonthH = 0;
+            const mntPerContract = [];
+            (mntState.clients || []).forEach(c => {
+                mntNormalizeClient(c);
+                let cEur = 0;
+                let cH = 0;
+                (c.entries || []).forEach(e => {
+                    if (e.date && e.date.startsWith(ym)) {
+                        cEur += mntComputeEntryCost(c, e);
+                        const hMap = mntGetEntryHoursMap(e);
+                        cH += Object.values(hMap).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                    }
+                });
+                mntTotalMonthEur += cEur;
+                mntTotalMonthH += cH;
+                if (cH > 0 || cEur > 0) {
+                    mntPerContract.push(`<div class="flex justify-between text-[11px]"><span class="truncate pr-2 text-gray-600 dark:text-gray-300">${escapeHtml(c.name)}</span><span class="font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">${cH} h · ${mntFormatCurrency(cEur)}</span></div>`);
+                }
+            });
+
+            grid.innerHTML = `
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">Expediciones del Mes</span>
+                        <span class="text-xl font-black text-brand-600 dark:text-brand-400">${exps.length}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 pt-1">${agencyLines}</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">Taller ArborSystems</span>
+                        <span class="text-xl font-black text-gray-900 dark:text-white">${arbors.length}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 pt-1 text-[11px] font-bold">
+                        <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800">Pendientes: ${arborOpen}</span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Reparados: ${arborClosed}</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase">Mantenimiento (${monthStr}/${yearStr})</span>
+                        <span class="text-base font-black text-emerald-700 dark:text-emerald-400">${mntTotalMonthH} h · ${mntFormatCurrency(mntTotalMonthEur)}</span>
+                    </div>
+                    <div class="space-y-1 pt-1">
+                        ${mntPerContract.length > 0 ? mntPerContract.join('') : '<span class="text-gray-400 text-[11px]">Sin horas registradas en este mes</span>'}
+                    </div>
+                </div>
+            `;
+        }
+
 </script>
 
     <!-- Modal Visor Visual e Impresión de Albarán y Checklist desde Historial -->
@@ -14836,5 +16858,110 @@ ${JSON.stringify(catalog)}`;
             </div>
         </div>
     </div>
+
+
+    <!-- Modal Nuevo Contrato de Mantenimiento -->
+    <div id="mntNewClientModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-folder-plus text-emerald-600"></i> Nuevo Contrato de Mantenimiento
+                </h3>
+                <button type="button" onclick="closeMntNewClientModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveMntNewClientModal(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre del Cliente / Contrato *</label>
+                    <input type="text" id="mntNewClientName" required placeholder="Ej: IVIA 2027 · Ayuntamiento · Comunidad..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Presupuesto Inicial (€) *</label>
+                        <input type="number" step="0.01" min="0" id="mntNewClientBudget" value="10000" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Tarifas iniciales:</label>
+                        <select id="mntNewClientRatesMode" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="blank" selected>Definir desde cero (1 tarifa base editable)</option>
+                            <option value="copy_current">Copiar tarifas del contrato actual</option>
+                            <option value="standard_4">Plantilla estándar (P1–P4)</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 bg-emerald-50/70 dark:bg-emerald-900/20 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                    Al crear el contrato se abrirá automáticamente el editor de tarifas para que añadas o ajustes todas las categorías que necesite este cliente.
+                </p>
+                <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" onclick="closeMntNewClientModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow">Crear y Configurar Tarifas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Configurar Tarifas Dinámicas y Horas Contratadas -->
+    <div id="mntRatesModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[70] p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full p-6 space-y-4 border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-600"></i> Configurar Tarifas y Horas Contratadas
+                    </h3>
+                    <p id="mntRatesModalContractName" class="text-xs text-gray-500 dark:text-gray-400 font-semibold mt-0.5"></p>
+                </div>
+                <button type="button" onclick="closeMntRatesModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveMntRatesModal(event)" class="space-y-4 text-xs flex-1 flex flex-col overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Añade, modifica o elimina las tarifas de este contrato (indica <strong>0</strong> en horas contratadas si va contra la bolsa general).</p>
+                    <button type="button" onclick="mntAddRateRowInModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i> <span>Añadir Tarifa</span>
+                    </button>
+                </div>
+                <div class="overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-xl flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 dark:bg-gray-700/50 text-[11px] uppercase text-gray-600 dark:text-gray-300 sticky top-0">
+                            <tr>
+                                <th class="py-2 px-2 w-24">Código</th>
+                                <th class="py-2 px-2">Descripción del Trabajo / Detalle</th>
+                                <th class="py-2 px-2 text-right w-28">Precio (€/h)</th>
+                                <th class="py-2 px-2 text-right w-28">Horas Contr.</th>
+                                <th class="py-2 px-2 text-center w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="mntRatesModalBody"></tbody>
+                    </table>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" onclick="closeMntRatesModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl font-semibold">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow">Guardar Tarifas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PLANTILLA IMPRIMIBLE AISLADA: INFORME DE ESTADO E HISTÓRICO DE MANTENIMIENTO -->
+    <div id="mnt-printable-report" class="hidden bg-white text-slate-900 max-w-[19.5cm] mx-auto p-4 font-sans text-xs"></div>
+
+    <!-- PLANTILLA IMPRIMIBLE AISLADA: HOJA DE CONTROL INTERNO DE HORAS (1 PÁGINA DIN-A4, GENERADA DINÁMICAMENTE) -->
+    <div id="mnt-printable-sheet" class="hidden bg-white text-slate-900 max-w-[19.5cm] mx-auto p-4 font-sans text-xs"></div>
+
+
+    <!-- Modal Buscador Global Instantáneo (Ctrl+K) -->
+    <div id="globalSearchModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center hidden z-[80] p-4 pt-12 sm:pt-20" onclick="if(event.target===this) closeGlobalSearchModal()">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
+            <div class="p-3.5 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 bg-gray-50 dark:bg-gray-900/60">
+                <i class="fa-solid fa-magnifying-glass text-brand-600 text-base ml-1"></i>
+                <input type="text" id="globalSearchInput" oninput="runGlobalSuiteSearch()" placeholder="Buscar cliente, teléfono, contraseña, albarán, máquina, parcela..." class="flex-1 bg-transparent text-sm font-semibold text-gray-900 dark:text-white focus:outline-none">
+                <button type="button" onclick="closeGlobalSearchModal()" class="px-2 py-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-bold">ESC</button>
+            </div>
+            <div id="globalSearchResults" class="p-4 overflow-y-auto space-y-4 text-xs flex-1">
+                <div class="text-center py-8 text-gray-400">
+                    Escribe cualquier término para buscar simultáneamente en <strong>Contactos, Plataformas, Expediciones, Notas, ArborSystems, Maquinaria y Mantenimiento</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
