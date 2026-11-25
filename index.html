@@ -819,6 +819,7 @@
                         </button>
                     </div>
                 </div>
+                <div id="dateFilterBar_expeditions" class="flex flex-wrap items-center gap-2 text-xs bg-gray-50/80 dark:bg-gray-700/30 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700"></div>
 
                 <!-- Barra de Aviso Interno Rápido (Eva, Merche u otros responsables) -->
                 <div class="bg-emerald-50/70 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/70 rounded-xl p-3 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 text-xs">
@@ -1678,6 +1679,7 @@
                     </button>
                 </div>
             </div>
+            <div id="dateFilterBar_notes" class="flex flex-wrap items-center gap-2 text-xs bg-white dark:bg-gray-800 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs"></div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-1 space-y-3">
@@ -1774,6 +1776,7 @@
                         </label>
                     </div>
                 </div>
+                <div id="dateFilterBar_arborPartes" class="flex flex-wrap items-center gap-2 text-xs bg-white dark:bg-gray-800 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs"></div>
 
                 <!-- Listado de Partes ArborSystems -->
                 <div id="arborPartesList" class="space-y-3"></div>
@@ -1861,6 +1864,7 @@
                         </button>
                     </div>
                 </div>
+                <div id="dateFilterBar_maqPartes" class="flex flex-wrap items-center gap-2 text-xs bg-white dark:bg-gray-800 px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-2xs"></div>
 
                 <div class="flex items-center justify-end gap-1.5 text-xs text-gray-600 dark:text-gray-300">
                     <label for="maqPartesPageSizeSelect" class="font-semibold">Mostrar:</label>
@@ -2154,6 +2158,7 @@
                             </button>
                         </div>
                     </div>
+                    <div id="dateFilterBar_mantenimientoEntries" class="px-5 py-2 bg-gray-50/60 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-2 text-xs"></div>
 
                     <div class="overflow-x-auto flex-1">
                         <table class="w-full text-left text-xs">
@@ -9022,10 +9027,11 @@ REGLAS:
             const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
             const allNotes = getNotes();
-            const filteredNotes = allNotes.filter(n => 
+            const textFilteredNotes = allNotes.filter(n => 
                 n.title.toLowerCase().includes(search) || 
                 (n.content && n.content.toLowerCase().includes(search))
             );
+            const filteredNotes = applySuiteDateFilterAndSort('notes', textFilteredNotes, n => n.datetime || n.date || '');
 
             badge.textContent = filteredNotes.length;
             const footerEl = document.getElementById('notesPaginationFooter');
@@ -9035,13 +9041,13 @@ REGLAS:
                 board.innerHTML = `
                     <div class="text-center py-10 text-gray-400 dark:text-gray-500">
                         <i class="fa-regular fa-note-sticky text-3xl mb-2"></i>
-                        <p class="text-xs">${search ? 'No hay coincidencia con la búsqueda' : 'Sin notas registradas'}</p>
+                        <p class="text-xs">${(search || hasActiveSuiteDateFilter('notes')) ? 'No hay coincidencia con el filtro aplicado' : 'Sin notas registradas'}</p>
                     </div>
                 `;
                 return;
             }
 
-            const isSearching = search.length > 0;
+            const isSearching = search.length > 0 || hasActiveSuiteDateFilter('notes') || (suiteDateFilterState.notes && suiteDateFilterState.notes.sortOrder !== 'desc');
             const pageInfo = paginateSuiteList('notes', filteredNotes);
             if (footerEl) footerEl.innerHTML = buildSuitePaginationFooterHtml('notes', pageInfo, 'anotaciones');
 
@@ -12639,13 +12645,14 @@ REGLAS:
         function toggleSelectAllVisibleExpeditions(checked) {
             const search = (document.getElementById('expeditionSearchInput')?.value || '').toLowerCase().trim();
             const all = getExpeditionHistory();
-            const filtered = all.filter(e =>
+            const textFiltered = all.filter(e =>
                 (e.docNum && e.docNum.toLowerCase().includes(search)) ||
                 (e.clientName && e.clientName.toLowerCase().includes(search)) ||
                 (e.transport && e.transport.toLowerCase().includes(search)) ||
                 (e.observaciones && e.observaciones.toLowerCase().includes(search)) ||
                 (e.date && e.date.includes(search))
             );
+            const filtered = applySuiteDateFilterAndSort('expeditions', textFiltered, e => e.date || '');
             const pageInfo = paginateSuiteList('expeditions', filtered);
             pageInfo.visibleItems.forEach(item => {
                 if (checked) selectedExpeditionIds.add(item.id);
@@ -12848,13 +12855,14 @@ REGLAS:
 
             const search = (document.getElementById('expeditionSearchInput')?.value || '').toLowerCase().trim();
             const all = getExpeditionHistory();
-            const filtered = all.filter(e =>
+            const textFiltered = all.filter(e =>
                 (e.docNum && e.docNum.toLowerCase().includes(search)) ||
                 (e.clientName && e.clientName.toLowerCase().includes(search)) ||
                 (e.transport && e.transport.toLowerCase().includes(search)) ||
                 (e.observaciones && e.observaciones.toLowerCase().includes(search)) ||
                 (e.date && e.date.includes(search))
             );
+            const filtered = applySuiteDateFilterAndSort('expeditions', textFiltered, e => e.date || '');
 
             if (countBadge) countBadge.innerText = filtered.length;
 
@@ -13596,12 +13604,13 @@ REGLAS:
             const container = document.getElementById('arborPartesList');
             if (!container) return;
             const search = (document.getElementById('arborParteSearch')?.value || '').toLowerCase().trim();
-            const list = getArborPartes().filter(p =>
+            const textFiltered = getArborPartes().filter(p =>
                 (p.numParte && p.numParte.toLowerCase().includes(search)) ||
                 (p.cliente && p.cliente.toLowerCase().includes(search)) ||
                 (p.equipo && p.equipo.toLowerCase().includes(search)) ||
                 (p.tecnico && p.tecnico.toLowerCase().includes(search))
             );
+            const list = applySuiteDateFilterAndSort('arborPartes', textFiltered, p => p.fechaRep || p.createdAt || '');
 
             const footerEl = document.getElementById('arborPartesPaginationFooter');
             if (list.length === 0) {
@@ -14353,7 +14362,7 @@ REGLAS:
             const search = (document.getElementById('maqParteSearch')?.value || '').toLowerCase().trim();
             const statusFilter = document.getElementById('maqParteStatusFilter')?.value || 'ALL';
 
-            const list = getMaqPartes().filter(p => {
+            const textFiltered = getMaqPartes().filter(p => {
                 const status = p.reparada ? 'Reparada' : (p.noReparada ? 'No reparada' : 'Pendiente');
                 const matchStatus = statusFilter === 'ALL' || status === statusFilter;
                 const matchSearch = (p.numParte && p.numParte.toLowerCase().includes(search)) ||
@@ -14363,6 +14372,7 @@ REGLAS:
                                     (p.lugarRep && p.lugarRep.toLowerCase().includes(search));
                 return matchStatus && matchSearch;
             });
+            const list = applySuiteDateFilterAndSort('maqPartes', textFiltered, p => p.fechaCom || p.createdAt || '');
 
             const footerEl = document.getElementById('maqPartesPaginationFooter');
             if (list.length === 0) {
@@ -15442,7 +15452,7 @@ ${JSON.stringify(catalog)}`;
             const hSummary = {};
             rates.forEach(r => { hSummary[r.id] = 0; });
 
-            (client.entries || []).forEach(e => {
+            mntGetFilteredSortedEntries(client).forEach(e => {
                 const hMap = mntGetEntryHoursMap(e);
                 Object.keys(hMap).forEach(rId => {
                     const h = parseFloat(hMap[rId]) || 0;
@@ -15892,12 +15902,9 @@ ${JSON.stringify(catalog)}`;
             if (!client) return;
             const rates = client.ratesList || [];
             const search = (document.getElementById('mnt-table-search')?.value || '').toLowerCase();
-            const entries = client.entries || [];
-            const filtered = entries.filter(e =>
-                (e.concept && e.concept.toLowerCase().includes(search)) ||
-                (e.workerNames && e.workerNames.toLowerCase().includes(search)) ||
-                (e.date && e.date.includes(search))
-            );
+            const filtered = mntGetFilteredSortedEntries(client);
+            const dfSt = suiteDateFilterState.mantenimientoEntries || {};
+            const dateRangeLabel = (dfSt.dateFrom || dfSt.dateTo) ? `${dfSt.dateFrom || 'inicio'} a ${dfSt.dateTo || 'hoy'}` : '';
 
             let totalUsedAll = 0;
             const hSummaryAll = {};
@@ -15959,7 +15966,8 @@ ${JSON.stringify(catalog)}`;
                     </div>
                     <div class="text-right text-[10px] text-slate-600">
                         <div>Fecha emisión: <strong>${todayStr}</strong></div>
-                        ${search ? `<div>Filtro aplicado: <strong>"${escapeHtml(search)}"</strong></div>` : ''}
+                        ${search ? `<div>Filtro texto: <strong>"${escapeHtml(search)}"</strong></div>` : ''}
+                        ${dateRangeLabel ? `<div>Intervalo fechas: <strong>${escapeHtml(dateRangeLabel)}</strong></div>` : ''}
                     </div>
                 </div>
 
@@ -16036,15 +16044,8 @@ ${JSON.stringify(catalog)}`;
             const footerEl = document.getElementById('mnt-entries-pagination-footer');
             const countBadge = document.getElementById('mnt-entries-count-badge');
             if (!tbody) return;
-            const search = (document.getElementById('mnt-table-search')?.value || '').toLowerCase();
-
             tbody.innerHTML = '';
-            const entries = client.entries || [];
-            const filtered = entries.filter(e =>
-                (e.concept && e.concept.toLowerCase().includes(search)) ||
-                (e.workerNames && e.workerNames.toLowerCase().includes(search)) ||
-                (e.date && e.date.includes(search))
-            );
+            const filtered = mntGetFilteredSortedEntries(client);
 
             if (countBadge) countBadge.textContent = filtered.length;
 
@@ -16804,6 +16805,212 @@ ${snippet}`;
                 </div>
             `;
         }
+
+
+        // =========================================================================
+        // MOTOR UNIFICADO DE ORDENACIÓN Y FILTRADO POR INTERVALO DE FECHAS
+        // =========================================================================
+        const suiteDateFilterState = {
+            expeditions: { sortOrder: 'desc', preset: 'all', dateFrom: '', dateTo: '' },
+            notes: { sortOrder: 'desc', preset: 'all', dateFrom: '', dateTo: '' },
+            arborPartes: { sortOrder: 'desc', preset: 'all', dateFrom: '', dateTo: '' },
+            maqPartes: { sortOrder: 'desc', preset: 'all', dateFrom: '', dateTo: '' },
+            mantenimientoEntries: { sortOrder: 'desc', preset: 'all', dateFrom: '', dateTo: '' }
+        };
+
+        function normalizeSuiteDateToYMD(rawVal) {
+            if (!rawVal) return '';
+            const str = String(rawVal).trim();
+            if (!str) return '';
+            // YYYY-MM-DD or YYYY-MM-DDTHH:mm...
+            const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoMatch) {
+                return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+            }
+            // DD/MM/YYYY
+            const esMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (esMatch) {
+                return `${esMatch[3]}-${esMatch[2].padStart(2, '0')}-${esMatch[1].padStart(2, '0')}`;
+            }
+            const parsed = new Date(str);
+            if (!isNaN(parsed.getTime())) {
+                const y = parsed.getFullYear();
+                const m = String(parsed.getMonth() + 1).padStart(2, '0');
+                const d = String(parsed.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return '';
+        }
+
+        function hasActiveSuiteDateFilter(listKey) {
+            const st = suiteDateFilterState[listKey];
+            return Boolean(st && (st.dateFrom || st.dateTo));
+        }
+
+        function triggerSuiteListRerender(listKey) {
+            if (typeof resetSuiteListPage === 'function') resetSuiteListPage(listKey);
+            if (listKey === 'expeditions' && typeof renderExpeditionHistory === 'function') renderExpeditionHistory();
+            else if (listKey === 'notes' && typeof renderNotes === 'function') renderNotes();
+            else if (listKey === 'arborPartes' && typeof renderArborPartes === 'function') renderArborPartes();
+            else if (listKey === 'maqPartes' && typeof renderMaqPartes === 'function') renderMaqPartes();
+            else if (listKey === 'mantenimientoEntries' && typeof mntRenderTable === 'function') mntRenderTable();
+        }
+
+        function setSuiteDateSortOrder(listKey, order) {
+            if (!suiteDateFilterState[listKey]) return;
+            suiteDateFilterState[listKey].sortOrder = order === 'asc' ? 'asc' : 'desc';
+            renderAllSuiteDateFilterBars();
+            triggerSuiteListRerender(listKey);
+        }
+
+        function applySuiteDatePreset(listKey, preset) {
+            const st = suiteDateFilterState[listKey];
+            if (!st) return;
+            st.preset = preset;
+            const now = new Date();
+            const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            if (preset === 'this_month') {
+                const first = new Date(now.getFullYear(), now.getMonth(), 1);
+                const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                st.dateFrom = fmt(first);
+                st.dateTo = fmt(last);
+            } else if (preset === 'last_month') {
+                const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const last = new Date(now.getFullYear(), now.getMonth(), 0);
+                st.dateFrom = fmt(first);
+                st.dateTo = fmt(last);
+            } else if (preset === 'last_30') {
+                const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+                st.dateFrom = fmt(from);
+                st.dateTo = fmt(now);
+            } else if (preset === 'this_year') {
+                st.dateFrom = `${now.getFullYear()}-01-01`;
+                st.dateTo = `${now.getFullYear()}-12-31`;
+            } else {
+                st.dateFrom = '';
+                st.dateTo = '';
+            }
+            renderAllSuiteDateFilterBars();
+            triggerSuiteListRerender(listKey);
+        }
+
+        function setSuiteDateRangeBound(listKey, boundKey, val) {
+            const st = suiteDateFilterState[listKey];
+            if (!st) return;
+            st[boundKey] = val || '';
+            st.preset = (st.dateFrom || st.dateTo) ? 'custom' : 'all';
+            renderAllSuiteDateFilterBars();
+            triggerSuiteListRerender(listKey);
+        }
+
+        function clearSuiteDateFilter(listKey) {
+            const st = suiteDateFilterState[listKey];
+            if (!st) return;
+            st.preset = 'all';
+            st.dateFrom = '';
+            st.dateTo = '';
+            renderAllSuiteDateFilterBars();
+            triggerSuiteListRerender(listKey);
+        }
+
+        function renderSuiteDateFilterBar(listKey) {
+            const container = document.getElementById(`dateFilterBar_${listKey}`);
+            const st = suiteDateFilterState[listKey];
+            if (!container || !st) return;
+
+            const hasRange = Boolean(st.dateFrom || st.dateTo);
+            container.innerHTML = `
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-down-wide-short text-brand-600"></i> Orden:
+                    </span>
+                    <select onchange="setSuiteDateSortOrder('${listKey}', this.value)" class="py-1 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-[11px] focus:ring-1 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                        <option value="desc" ${st.sortOrder === 'desc' ? 'selected' : ''}>Más reciente → Más antigua</option>
+                        <option value="asc" ${st.sortOrder === 'asc' ? 'selected' : ''}>Más antigua → Más reciente</option>
+                    </select>
+                </div>
+                <span class="text-gray-300 dark:text-gray-600 hidden sm:inline">|</span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <i class="fa-regular fa-calendar text-brand-600"></i> Período:
+                    </span>
+                    <select onchange="applySuiteDatePreset('${listKey}', this.value)" class="py-1 px-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold text-[11px] focus:ring-1 focus:ring-brand-500 focus:outline-none cursor-pointer">
+                        <option value="all" ${st.preset === 'all' ? 'selected' : ''}>Todas las fechas</option>
+                        <option value="this_month" ${st.preset === 'this_month' ? 'selected' : ''}>Este mes</option>
+                        <option value="last_month" ${st.preset === 'last_month' ? 'selected' : ''}>Mes pasado</option>
+                        <option value="last_30" ${st.preset === 'last_30' ? 'selected' : ''}>Últimos 30 días</option>
+                        <option value="this_year" ${st.preset === 'this_year' ? 'selected' : ''}>Este año</option>
+                        ${st.preset === 'custom' ? '<option value="custom" selected>Intervalo personalizado</option>' : ''}
+                    </select>
+                    <label class="inline-flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 font-semibold">
+                        <span>Desde:</span>
+                        <input type="date" value="${escapeHtml(st.dateFrom)}" onchange="setSuiteDateRangeBound('${listKey}', 'dateFrom', this.value)" class="py-0.5 px-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-[11px] focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                    </label>
+                    <label class="inline-flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300 font-semibold">
+                        <span>Hasta:</span>
+                        <input type="date" value="${escapeHtml(st.dateTo)}" onchange="setSuiteDateRangeBound('${listKey}', 'dateTo', this.value)" class="py-0.5 px-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-[11px] focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                    </label>
+                    ${hasRange ? `
+                    <button type="button" onclick="clearSuiteDateFilter('${listKey}')" class="px-2 py-0.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg text-[11px] font-bold transition flex items-center gap-1" title="Limpiar filtro de fechas">
+                        <i class="fa-solid fa-xmark"></i> Limpiar
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderAllSuiteDateFilterBars() {
+            Object.keys(suiteDateFilterState).forEach(renderSuiteDateFilterBar);
+        }
+
+        function applySuiteDateFilterAndSort(listKey, items, dateExtractor) {
+            const st = suiteDateFilterState[listKey] || { sortOrder: 'desc', dateFrom: '', dateTo: '' };
+            const fromYmd = st.dateFrom || '';
+            const toYmd = st.dateTo || '';
+
+            const decorated = (items || []).map((item, idx) => {
+                const rawDate = dateExtractor(item);
+                const ymd = normalizeSuiteDateToYMD(rawDate);
+                return { item, idx, ymd };
+            });
+
+            const filtered = decorated.filter(entry => {
+                if (!fromYmd && !toYmd) return true;
+                if (!entry.ymd) return false;
+                if (fromYmd && entry.ymd < fromYmd) return false;
+                if (toYmd && entry.ymd > toYmd) return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                // Los registros sin fecha siempre van al final para no estorbar
+                if (!a.ymd && !b.ymd) return a.idx - b.idx;
+                if (!a.ymd) return 1;
+                if (!b.ymd) return -1;
+                if (a.ymd !== b.ymd) {
+                    return st.sortOrder === 'asc'
+                        ? a.ymd.localeCompare(b.ymd)
+                        : b.ymd.localeCompare(a.ymd);
+                }
+                return a.idx - b.idx;
+            });
+
+            return filtered.map(entry => entry.item);
+        }
+
+        function mntGetFilteredSortedEntries(client) {
+            const search = (document.getElementById('mnt-table-search')?.value || '').toLowerCase();
+            const entries = (client && client.entries) || [];
+            const textFiltered = entries.filter(e =>
+                (e.concept && e.concept.toLowerCase().includes(search)) ||
+                (e.workerNames && e.workerNames.toLowerCase().includes(search)) ||
+                (e.date && e.date.includes(search))
+            );
+            return applySuiteDateFilterAndSort('mantenimientoEntries', textFiltered, e => e.date || '');
+        }
+
+        renderAllSuiteDateFilterBars();
 
 </script>
 
