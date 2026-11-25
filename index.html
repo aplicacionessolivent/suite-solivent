@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob: data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://accounts.google.com; font-src 'self' data: https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://gmail.googleapis.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; frame-src 'self' blob: https://accounts.google.com; object-src 'none'; base-uri 'self';">
-    <title>Herramientas Documentos v51 - Sol i Vent Paisajes</title>
+    <title>Suite de herramientas</title>
+    <link id="dynamicFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232563eb'/%3E%3Cpath d='M22 18h20v6h8a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V28a4 4 0 0 1 4-4h8v-6zm4 4v2h12v-2H26zm-12 12v4h10v-3h16v3h10v-4H14z' fill='%23ffffff'/%3E%3C/svg%3E">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -493,8 +494,13 @@
                 <div class="bg-brand-600 text-white p-2.5 rounded-xl shadow-md">
                     <i class="fa-solid fa-toolbox text-2xl"></i>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold text-gray-900 dark:text-white leading-tight">Suite de Herramientas de Gestión</h1>
+                <div class="group/hdr">
+                    <div class="flex items-center gap-1.5">
+                        <h1 id="suiteMainHeaderTitle" class="text-xl font-bold text-gray-900 dark:text-white leading-tight">Suite de herramientas</h1>
+                        <button type="button" onclick="event.stopPropagation(); openCustomAppTitleModal()" class="opacity-60 sm:opacity-0 sm:group-hover/hdr:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 rounded transition text-xs" title="Personalizar nombre de la pestaña y cabecera">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                    </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Sol i Vent Paisajes S.L. · 100% Privado y Local</p>
                 </div>
             </div>
@@ -3604,12 +3610,31 @@
         let draggedHomeKey = null;
         let justDraggedHome = false;
 
+        function getHomeModuleCustomTexts() {
+            try {
+                const raw = localStorage.getItem('solivent_home_module_texts');
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveHomeModuleCustomTexts(mapObj) {
+            localStorage.setItem('solivent_home_module_texts', JSON.stringify(mapObj));
+        }
+
         function getHomeModulesOrder() {
+            const customTexts = getHomeModuleCustomTexts();
+            const withCustom = HOME_MODULES_DEFAULT.map(m => {
+                const c = customTexts[m.key];
+                return c ? { ...m, label: c.label || m.label, sub: (c.sub !== undefined ? c.sub : m.sub) } : m;
+            });
+
             const saved = localStorage.getItem('solivent_home_order');
-            if (!saved) return HOME_MODULES_DEFAULT;
+            if (!saved) return withCustom;
             try {
                 const orderKeys = JSON.parse(saved);
-                const map = new Map(HOME_MODULES_DEFAULT.map(m => [m.key, m]));
+                const map = new Map(withCustom.map(m => [m.key, m]));
                 const ordered = [];
                 orderKeys.forEach(k => {
                     if (k === 'partes') {
@@ -3624,7 +3649,7 @@
                 map.forEach(v => ordered.push(v));
                 return ordered;
             } catch (e) {
-                return HOME_MODULES_DEFAULT;
+                return withCustom;
             }
         }
 
@@ -3650,9 +3675,14 @@
                      class="home-module-card group relative p-5 h-full bg-white dark:bg-gray-800 hover:border-brand-500 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing flex items-center gap-3.5 select-none">
                     ${m.key === 'notes' ? '<span id="homeAlertsBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-red-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
                     ${m.key === 'mail' ? '<span id="homeMailUnreadBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-brand-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
-                    <button type="button" onclick="event.stopPropagation(); openModuleInNewTab('${m.key}')" class="${m.key === 'mail' ? 'hidden' : 'opacity-70 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100'} absolute bottom-2.5 right-2.5 p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Abrir este módulo en una pestaña nueva">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </button>
+                    <div class="opacity-75 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 absolute bottom-2 right-2 flex items-center gap-0.5">
+                        <button type="button" onclick="event.stopPropagation(); openEditHomeModuleModal('${m.key}')" class="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Editar título y descripción de esta tarjeta">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button type="button" onclick="event.stopPropagation(); openModuleInNewTab('${m.key}')" class="${m.key === 'mail' ? 'hidden' : ''} p-1.5 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Abrir este módulo en una pestaña nueva">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </button>
+                    </div>
                     <i class="fa-solid fa-grip-vertical text-gray-300 dark:text-gray-600 hover:text-gray-500 text-sm flex-shrink-0" title="Arrastra para reordenar"></i>
                     <div class="w-11 h-11 bg-blue-50 dark:bg-gray-700 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center text-xl shadow-inner flex-shrink-0">
                         <i class="${m.icon}"></i>
@@ -3815,6 +3845,9 @@
                     internalNotifyTemplates: getInternalNotifyTemplates(),
                     internalBatchNotifyTemplates: getInternalBatchNotifyTemplates(),
                     homeModulesOrder: JSON.parse(localStorage.getItem('solivent_home_order') || 'null'),
+                    homeModuleTexts: getHomeModuleCustomTexts(),
+                    customAppTitle: localStorage.getItem('solivent_custom_app_title') || '',
+                    customMailTitle: localStorage.getItem('solivent_custom_mail_title') || '',
                     geminiApiKey: includeSecrets ? (localStorage.getItem('solivent_gemini_api_key') || '') : '',
                     gmailClientId: localStorage.getItem('solivent_gmail_client_id') || '905848196987-si2ial3ojss3is4cb67uu9d15pj8a0go.apps.googleusercontent.com'
                 }
@@ -4195,6 +4228,9 @@
                         if (Array.isArray(d.internalNotifyTemplates)) localStorage.setItem('solivent_internal_notify_templates', JSON.stringify(d.internalNotifyTemplates));
                         if (Array.isArray(d.internalBatchNotifyTemplates)) localStorage.setItem('solivent_internal_batch_templates', JSON.stringify(d.internalBatchNotifyTemplates));
                         if (Array.isArray(d.homeModulesOrder)) localStorage.setItem('solivent_home_order', JSON.stringify(d.homeModulesOrder));
+                        if (d.homeModuleTexts && typeof d.homeModuleTexts === 'object') localStorage.setItem('solivent_home_module_texts', JSON.stringify(d.homeModuleTexts));
+                        if (typeof d.customAppTitle === 'string') localStorage.setItem('solivent_custom_app_title', d.customAppTitle);
+                        if (typeof d.customMailTitle === 'string') localStorage.setItem('solivent_custom_mail_title', d.customMailTitle);
                         if (typeof d.geminiApiKey === 'string' && d.geminiApiKey.trim()) {
                             localStorage.setItem('solivent_gemini_api_key', d.geminiApiKey.trim());
                         }
@@ -4286,6 +4322,7 @@
             document.getElementById('moduleNavHeader').classList.add('hidden');
             renderHomeModules();
             renderHomeAlerts();
+            if (typeof updateBrowserTabAppearance === 'function') updateBrowserTabAppearance('home');
         }
 
         function switchTab(tabKey) {
@@ -4302,13 +4339,16 @@
             });
 
             if (current) {
+                const customInfo = (typeof getHomeModuleCustomTexts === 'function' ? getHomeModuleCustomTexts()[tabKey] : null);
+                const displayLabel = (customInfo && customInfo.label) ? customInfo.label : current.label;
                 const navHeader = document.getElementById('moduleNavHeader');
                 navHeader.classList.remove('hidden');
                 document.getElementById('moduleNavTitle').innerHTML = `
                     <i class="${current.icon} text-brand-600"></i>
-                    <span>${current.label}</span>
+                    <span>${escapeHtml(displayLabel)}</span>
                 `;
             }
+            if (typeof updateBrowserTabAppearance === 'function') updateBrowserTabAppearance(tabKey);
 
             if (tabKey === 'mail') {
                 initMailSection();
@@ -9675,6 +9715,10 @@ REGLAS:
                 if (inboxBadge) {
                     inboxBadge.innerText = unread;
                     inboxBadge.classList.toggle('hidden', !unread);
+                }
+                latestMailUnreadCount = unread;
+                if (activeTabKey === 'mail' && typeof updateBrowserTabAppearance === 'function') {
+                    updateBrowserTabAppearance('mail');
                 }
                 currentConnectedMailAddress = profile.emailAddress || 'asesor@solivent.eu';
                 updateMailConnectionUI(true, currentConnectedMailAddress);
@@ -17012,6 +17056,140 @@ ${snippet}`;
 
         renderAllSuiteDateFilterBars();
 
+
+        // =========================================================================
+        // TÍTULO E ICONO (FAVICON) DINÁMICOS POR PESTAÑA + EDICIÓN DE TARJETAS
+        // =========================================================================
+        let latestMailUnreadCount = 0;
+
+        const SUITE_FAVICONS_SVG = {
+            // Caja de herramientas azul corporativo para la Suite general
+            suite: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232563eb'/%3E%3Cpath d='M22 18h20v6h8a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V28a4 4 0 0 1 4-4h8v-6zm4 4v2h12v-2H26zm-12 12v4h10v-3h16v3h10v-4H14z' fill='%23ffffff'/%3E%3C/svg%3E",
+            // Sobre rojo/coral con solapa blanca para la pestaña de Correo
+            mail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23dc2626'/%3E%3Cpath d='M12 20a4 4 0 0 1 4-4h32a4 4 0 0 1 4 4v24a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V20zm5 2l15 11 15-11H17zm31 22V26L33.2 36.8a2 2 0 0 1-2.4 0L16 26v18h32z' fill='%23ffffff'/%3E%3C/svg%3E",
+            // Verde esmeralda para Mantenimiento
+            mantenimiento: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23059669'/%3E%3Cpath d='M32 12L18 32h8l-6 12h10v8h4v-8h10l-6-12h8L32 12z' fill='%23ffffff'/%3E%3C/svg%3E",
+            // Ámbar/Naranja para Maquinaria y ArborSystems
+            taller: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23d97706'/%3E%3Cpath d='M45.7 18.3a10 10 0 0 0-13.2 1.1L20 31.9a6 6 0 1 0 8.5 8.5l12.5-12.5a10 10 0 0 0 4.7-9.6z' fill='%23ffffff'/%3E%3C/svg%3E"
+        };
+
+        function getCustomAppTitle() {
+            return (localStorage.getItem('solivent_custom_app_title') || '').trim() || 'Suite de herramientas';
+        }
+
+        function getCustomMailTitle() {
+            return (localStorage.getItem('solivent_custom_mail_title') || '').trim() || 'Correo';
+        }
+
+        function updateBrowserTabAppearance(tabKey = activeTabKey) {
+            const appTitle = getCustomAppTitle();
+            const mailTitle = getCustomMailTitle();
+            const h1El = document.getElementById('suiteMainHeaderTitle');
+            if (h1El) h1El.innerText = appTitle;
+
+            let targetTitle = appTitle;
+            let targetIconHref = SUITE_FAVICONS_SVG.suite;
+
+            if (tabKey === 'mail') {
+                targetTitle = latestMailUnreadCount > 0 ? `(${latestMailUnreadCount}) ${mailTitle}` : mailTitle;
+                targetIconHref = SUITE_FAVICONS_SVG.mail;
+            } else if (tabKey && tabKey !== 'home') {
+                const customTexts = getHomeModuleCustomTexts();
+                const modDef = HOME_MODULES_DEFAULT.find(m => m.key === tabKey);
+                const modLabel = (customTexts[tabKey] && customTexts[tabKey].label) || (modDef && modDef.label) || '';
+                if (modLabel) targetTitle = `${modLabel} · ${appTitle}`;
+                if (tabKey === 'mantenimiento') targetIconHref = SUITE_FAVICONS_SVG.mantenimiento;
+                else if (tabKey === 'arbor' || tabKey === 'maquinaria') targetIconHref = SUITE_FAVICONS_SVG.taller;
+            }
+
+            document.title = targetTitle;
+
+            let linkEl = document.getElementById('dynamicFavicon');
+            if (!linkEl) {
+                linkEl = document.createElement('link');
+                linkEl.id = 'dynamicFavicon';
+                linkEl.rel = 'icon';
+                document.head.appendChild(linkEl);
+            }
+            linkEl.type = 'image/svg+xml';
+            linkEl.href = targetIconHref;
+        }
+
+        function openCustomAppTitleModal() {
+            document.getElementById('customAppTitleInput').value = getCustomAppTitle();
+            document.getElementById('customMailTitleInput').value = getCustomMailTitle();
+            document.getElementById('customAppTitleModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('customAppTitleInput').focus(), 40);
+        }
+
+        function closeCustomAppTitleModal() {
+            document.getElementById('customAppTitleModal').classList.add('hidden');
+        }
+
+        function saveCustomAppTitleModal(e) {
+            e.preventDefault();
+            const appVal = document.getElementById('customAppTitleInput').value.trim() || 'Suite de herramientas';
+            const mailVal = document.getElementById('customMailTitleInput').value.trim() || 'Correo';
+            localStorage.setItem('solivent_custom_app_title', appVal);
+            localStorage.setItem('solivent_custom_mail_title', mailVal);
+            updateBrowserTabAppearance(activeTabKey);
+            closeCustomAppTitleModal();
+            showToast('Nombres de pestañas actualizados');
+        }
+
+        function openEditHomeModuleModal(modKey) {
+            const defMod = HOME_MODULES_DEFAULT.find(m => m.key === modKey);
+            if (!defMod) return;
+            const customTexts = getHomeModuleCustomTexts();
+            const current = customTexts[modKey] || {};
+
+            document.getElementById('editHomeModKey').value = modKey;
+            document.getElementById('editHomeModLabel').value = current.label || defMod.label;
+            document.getElementById('editHomeModSub').value = current.sub !== undefined ? current.sub : defMod.sub;
+            document.getElementById('editHomeModuleModal').classList.remove('hidden');
+            setTimeout(() => {
+                const inp = document.getElementById('editHomeModLabel');
+                inp.focus();
+                inp.select();
+            }, 40);
+        }
+
+        function closeEditHomeModuleModal() {
+            document.getElementById('editHomeModuleModal').classList.add('hidden');
+        }
+
+        function saveEditHomeModuleModal(e) {
+            e.preventDefault();
+            const key = document.getElementById('editHomeModKey').value;
+            const label = document.getElementById('editHomeModLabel').value.trim();
+            const sub = document.getElementById('editHomeModSub').value.trim();
+            if (!key || !label) return;
+
+            const customTexts = getHomeModuleCustomTexts();
+            customTexts[key] = { label, sub };
+            saveHomeModuleCustomTexts(customTexts);
+            renderHomeModules();
+            closeEditHomeModuleModal();
+            showToast('Tarjeta actualizada');
+        }
+
+        function resetSingleHomeModuleText() {
+            const key = document.getElementById('editHomeModKey').value;
+            if (!key) return;
+            const customTexts = getHomeModuleCustomTexts();
+            delete customTexts[key];
+            saveHomeModuleCustomTexts(customTexts);
+            renderHomeModules();
+            closeEditHomeModuleModal();
+            showToast('Texto original restaurado');
+        }
+
+        // Aplicar título e icono nada más cargar el script (incluso antes de window.onload)
+        (function() {
+            const initialTab = new URLSearchParams(window.location.search).get('tab') || 'home';
+            updateBrowserTabAppearance(initialTab);
+        })();
+
 </script>
 
     <!-- Modal Visor Visual e Impresión de Albarán y Checklist desde Historial -->
@@ -17167,6 +17345,66 @@ ${snippet}`;
                     Escribe cualquier término para buscar simultáneamente en <strong>Contactos, Plataformas, Expediciones, Notas, ArborSystems, Maquinaria y Mantenimiento</strong>.
                 </div>
             </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Editar Título y Descripción de Tarjeta del Menú Principal -->
+    <div id="editHomeModuleModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[80] p-4" onclick="if(event.target===this) closeEditHomeModuleModal()">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i> Personalizar Tarjeta del Menú
+                </h3>
+                <button type="button" onclick="closeEditHomeModuleModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveEditHomeModuleModal(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="editHomeModKey">
+                <div>
+                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Título de la tarjeta *</label>
+                    <input type="text" id="editHomeModLabel" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Descripción / Subtítulo</label>
+                    <input type="text" id="editHomeModSub" placeholder="Descripción breve bajo el título..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div class="flex justify-between items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" onclick="resetSingleHomeModuleText()" class="px-3 py-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-semibold transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Restaurar original
+                    </button>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="closeEditHomeModuleModal()" class="px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold">Guardar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Personalizar Nombres de Pestañas del Navegador -->
+    <div id="customAppTitleModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-[80] p-4" onclick="if(event.target===this) closeCustomAppTitleModal()">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-window-maximize text-brand-600"></i> Títulos de Pestañas del Navegador
+                </h3>
+                <button type="button" onclick="closeCustomAppTitleModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="saveCustomAppTitleModal(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Nombre de la pestaña principal de la Suite *</label>
+                    <input type="text" id="customAppTitleInput" required placeholder="Suite de herramientas" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 dark:text-gray-300 mb-1">Nombre de la pestaña del Correo *</label>
+                    <input type="text" id="customMailTitleInput" required placeholder="Correo" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <p class="text-[11px] text-gray-400">Cada pestaña muestra además su propio icono distintivo en la barra superior del navegador.</p>
+                <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" onclick="closeCustomAppTitleModal()" class="px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold">Guardar</button>
+                </div>
+            </form>
         </div>
     </div>
 
