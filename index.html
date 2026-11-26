@@ -1673,6 +1673,9 @@
                     <input type="text" id="noteSearch" oninput="resetSuiteListPage('notes'); renderNotes()" placeholder="Buscar nota o recordatorio..." class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                 </div>
                 <div class="flex items-center space-x-2 w-full sm:w-auto justify-end flex-wrap gap-y-2">
+                    <button type="button" id="btnDesktopNotifyToggle" onclick="toggleDesktopNotifications()" class="px-3 py-2 bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 text-amber-800 dark:text-amber-200 text-xs font-semibold rounded-lg transition border border-amber-200 dark:border-amber-700 flex items-center gap-1.5" title="Activar avisos emergentes de Windows/Chrome aunque la ventana esté minimizada">
+                        <i class="fa-solid fa-bell"></i> <span id="desktopNotifyStatusLabel">Avisos Escritorio</span>
+                    </button>
                     <button onclick="exportNotes()" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-1.5" title="Exportar copia de seguridad de notas">
                         <i class="fa-solid fa-file-export"></i> Respaldo
                     </button>
@@ -9300,6 +9303,9 @@ REGLAS:
                 document.getElementById('alertPopupContent').innerText = pending.content || '(Sin detalles adicionales)';
                 document.getElementById('alertPopupTime').innerText = 'Fecha/Hora del evento: ' + (pending.datetime ? pending.datetime.replace('T', ' a las ') : '');
                 document.getElementById('alertPopupModal').classList.remove('hidden');
+                if (typeof triggerDesktopNotificationForNote === 'function') {
+                    triggerDesktopNotificationForNote(pending);
+                }
             }
             renderHomeAlerts();
         }
@@ -10173,6 +10179,7 @@ REGLAS:
                         date: getHeaderVal(headers, 'Date') || (m.internalDate ? new Date(parseInt(m.internalDate, 10)).toISOString() : ''),
                         subject: getHeaderVal(headers, 'Subject') || '(Sin asunto)',
                         bodyPlain: plainText,
+                        bodyHtml: parsedBody.html || '',
                         attachments: parsedBody.attachments
                     };
                 });
@@ -10242,7 +10249,7 @@ REGLAS:
                                     <span class="text-[11px] text-gray-400 ml-1">${escapeHtml(dateFormatted)}</span>
                                 </div>
                             </div>
-                            <div class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed break-words overflow-x-auto">${escapeHtml(m.bodyPlain || '')}</div>
+                            <div class="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed break-words overflow-x-auto">${formatMailBodyWithLinks(m)}</div>
                             ${attHtml}
                         </div>
                     `;
@@ -13694,6 +13701,9 @@ REGLAS:
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            <button type="button" onclick="sendArborParteByMailWithPdf('${p.id}')" class="px-2.5 py-2 bg-brand-50 dark:bg-brand-900/30 hover:bg-brand-100 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 text-xs font-bold rounded-lg transition flex items-center gap-1" title="Generar PDF del parte y abrir redacción de correo con el PDF ya adjunto">
+                                <i class="fa-solid fa-paper-plane"></i> Email + PDF
+                            </button>
                             <button type="button" onclick="openQuickMessageFromArbor('${p.id}')" class="p-2 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 text-xs font-bold rounded-lg transition flex items-center gap-1" title="Copiar aviso rápido por Email o WhatsApp para este cliente">
                                 <i class="fa-solid fa-comment-dots"></i> Avisar
                             </button>
@@ -13973,11 +13983,9 @@ REGLAS:
         // --- Generación del PDF Completo de Parte ArborSystems ---
         // Página 1(+2): Presupuesto convertido a Parte ("Nº de Parte", sin "PRESUPUESTO A:", sin condiciones oferta/IBAN y SIN "Entregado:")
         // Página final añadida: Hoja de Reparación / Taller con técnico, fecha, descripción, tabla de piezas con checks + cantidades, y observaciones
-        async function generateArborPartePdf(id) {
+        async function buildArborPartePdfBytes(id) {
             const parte = getArborPartes().find(p => p.id === id);
-            if (!parte) return;
-
-            try {
+            if (!parte) return null;
                 const { PDFDocument, rgb, StandardFonts } = PDFLib;
                 let pdfDoc;
                 const origFile = await idbGetFile(`arbor_orig_${id}`);
@@ -14282,13 +14290,21 @@ REGLAS:
                     color: rgb(0.4, 0.45, 0.5)
                 });
 
-                const pdfBytes = await pdfDoc.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const pdfBytes = await pdfDoc.save();
+            const safeName = `PARTE_${(parte.numParte || 'ARBOR').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+            return { pdfBytes, fileName: safeName, parte };
+        }
+
+        async function generateArborPartePdf(id) {
+            try {
+                const built = await buildArborPartePdfBytes(id);
+                if (!built) return;
+                const blob = new Blob([built.pdfBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `PARTE_${(parte.numParte || 'ARBOR').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+                a.download = built.fileName;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -14462,7 +14478,10 @@ REGLAS:
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            <button type="button" onclick="duplicateMaqParte('${p.id}')" class="px-2.5 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-brand-50 text-gray-700 dark:text-gray-200 hover:text-brand-600 text-xs font-bold rounded-lg transition flex items-center gap-1" title="Duplicar incidencia con fecha de hoy">
+                                <i class="fa-regular fa-clone"></i> Duplicar
+                            </button>
                             <button type="button" onclick="openMaqParteModal('${p.id}')" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs font-bold rounded-lg transition flex items-center gap-1.5">
                                 <i class="fa-solid fa-pen-to-square text-brand-600"></i> Editar
                             </button>
@@ -15871,12 +15890,13 @@ ${JSON.stringify(catalog)}`;
                             severity: 'critical',
                             text: `Presupuesto excedido en ${mntFormatCurrency(Math.abs(remB))} (Consumido: ${mntFormatCurrency(totalUsed)} de ${mntFormatCurrency(initB)})`
                         });
-                    } else if (pctRem <= 15) {
+                    } else if (pctRem <= 20) {
+                        const pctUsed = (100 - pctRem).toFixed(1);
                         alerts.push({
                             contractId: c.id,
                             contractName: c.name,
                             severity: 'warning',
-                            text: `Queda menos del 15% de bolsa (${pctRem.toFixed(1)}% restante: ${mntFormatCurrency(remB)})`
+                            text: `Consumo al ${pctUsed}% (Queda ${pctRem.toFixed(1)}% de bolsa: ${mntFormatCurrency(remB)})`
                         });
                     }
                 }
@@ -16117,7 +16137,8 @@ ${JSON.stringify(catalog)}`;
                     <td class="px-3 py-2">${mntFormatEntryHoursBadges(client, e)}</td>
                     <td class="px-3 py-2 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap">${mntFormatCurrency(rowCost)}</td>
                     <td class="px-2 py-2 text-center whitespace-nowrap">
-                        <button type="button" onclick="mntEditEntry('${escapeJs(e.id)}')" class="text-gray-500 hover:text-emerald-600 p-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        <button type="button" onclick="mntDuplicateEntry('${escapeJs(e.id)}')" class="text-gray-500 hover:text-brand-600 p-1" title="Duplicar parte con fecha de hoy"><i class="fa-regular fa-clone"></i></button>
+                        <button type="button" onclick="mntEditEntry('${escapeJs(e.id)}')" class="text-gray-500 hover:text-emerald-600 p-1 ml-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
                         <button type="button" onclick="mntDeleteEntry('${escapeJs(e.id)}')" class="text-gray-500 hover:text-red-600 p-1 ml-1" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
@@ -16304,7 +16325,68 @@ ${JSON.stringify(catalog)}`;
             showToast('CSV exportado');
         }
 
-        function mntSendSummaryByMail() {
+        async function buildMntSummaryPdfAttachment(client, filteredEntries, totalUsedAll, remainingBudget, totalHoursAll) {
+            if (typeof PDFLib === 'undefined') return null;
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
+            const pdfDoc = await PDFDocument.create();
+            const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+            const toWinAnsi = (str) => String(str || '').replace(/[^\x20-\x7E\xA0-\xFF]/g, ' ');
+            let page = pdfDoc.addPage([595.28, 841.89]);
+            const margin = 40;
+            let y = 795;
+
+            page.drawRectangle({ x: margin, y: y - 8, width: 515, height: 34, color: rgb(0.02, 0.37, 0.27) });
+            page.drawText(toWinAnsi('SOL I VENT PAISAJES S.L. - INFORME BOLSA DE MANTENIMIENTO'), { x: margin + 12, y: y + 6, size: 11, font: fontBold, color: rgb(1, 1, 1) });
+            y -= 28;
+
+            page.drawText(toWinAnsi(`Contrato / Cliente: ${client.name}`), { x: margin, y, size: 11, font: fontBold, color: rgb(0.1, 0.15, 0.2) });
+            y -= 16;
+            page.drawText(toWinAnsi(`Fecha emisión: ${new Date().toLocaleDateString('es-ES')}   |   Partes incluidos: ${filteredEntries.length}`), { x: margin, y, size: 8.5, font: fontReg, color: rgb(0.4, 0.45, 0.5) });
+            y -= 22;
+
+            page.drawRectangle({ x: margin, y: y - 34, width: 515, height: 42, color: rgb(0.95, 0.98, 0.96), borderColor: rgb(0.7, 0.85, 0.78), borderWidth: 0.8 });
+            page.drawText(toWinAnsi(`Presupuesto Inicial: ${mntFormatCurrency(client.initialBudget)}`), { x: margin + 10, y: y - 10, size: 9, font: fontBold, color: rgb(0.1, 0.15, 0.2) });
+            page.drawText(toWinAnsi(`Consumido: ${mntFormatCurrency(totalUsedAll)} (${totalHoursAll} h)`), { x: margin + 190, y: y - 10, size: 9, font: fontBold, color: rgb(0.7, 0.35, 0.05) });
+            page.drawText(toWinAnsi(`Restante: ${mntFormatCurrency(remainingBudget)}`), { x: margin + 375, y: y - 10, size: 9, font: fontBold, color: rgb(0.02, 0.45, 0.32) });
+            y -= 50;
+
+            page.drawRectangle({ x: margin, y: y - 4, width: 515, height: 18, color: rgb(0.9, 0.93, 0.95) });
+            page.drawText('Fecha', { x: margin + 6, y: y + 2, size: 8, font: fontBold, color: rgb(0.15, 0.2, 0.25) });
+            page.drawText('Concepto / Operarios', { x: margin + 72, y: y + 2, size: 8, font: fontBold, color: rgb(0.15, 0.2, 0.25) });
+            page.drawText('Horas', { x: margin + 345, y: y + 2, size: 8, font: fontBold, color: rgb(0.15, 0.2, 0.25) });
+            page.drawText('Importe', { x: margin + 455, y: y + 2, size: 8, font: fontBold, color: rgb(0.15, 0.2, 0.25) });
+            y -= 18;
+
+            filteredEntries.forEach((e, idx) => {
+                if (y < 60) {
+                    page = pdfDoc.addPage([595.28, 841.89]);
+                    y = 795;
+                }
+                if (idx % 2 === 1) {
+                    page.drawRectangle({ x: margin, y: y - 4, width: 515, height: 16, color: rgb(0.98, 0.98, 0.99) });
+                }
+                const cost = mntComputeEntryCost(client, e);
+                const desc = `${e.concept || ''}${e.workerNames ? ' (' + e.workerNames + ')' : ''}`.slice(0, 56);
+                const hrs = mntFormatEntryHoursPlain(client, e).slice(0, 22);
+                page.drawText(toWinAnsi(e.date || ''), { x: margin + 6, y: y + 1, size: 7.5, font: fontReg, color: rgb(0.2, 0.2, 0.2) });
+                page.drawText(toWinAnsi(desc), { x: margin + 72, y: y + 1, size: 7.5, font: fontReg, color: rgb(0.1, 0.1, 0.1) });
+                page.drawText(toWinAnsi(hrs), { x: margin + 345, y: y + 1, size: 7.5, font: fontReg, color: rgb(0.2, 0.2, 0.2) });
+                page.drawText(toWinAnsi(mntFormatCurrency(cost)), { x: margin + 455, y: y + 1, size: 7.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
+                y -= 16;
+            });
+
+            const bytes = await pdfDoc.save();
+            const safeClient = (client.name || 'Contrato').replace(/[^a-zA-Z0-9_-]/g, '_');
+            return {
+                name: `Informe_Mantenimiento_${safeClient}_${new Date().toISOString().slice(0, 10)}.pdf`,
+                mimeType: 'application/pdf',
+                base64: arrayBufferToBase64(bytes.buffer)
+            };
+        }
+
+        async function mntSendSummaryByMail() {
             const client = mntGetCurrentClient();
             if (!client) return;
             const totalUsed = (client.entries || []).reduce((acc, e) => acc + mntComputeEntryCost(client, e), 0);
@@ -16313,17 +16395,29 @@ ${JSON.stringify(catalog)}`;
                 const hMap = mntGetEntryHoursMap(e);
                 return acc + Object.values(hMap).reduce((s, v) => s + (parseFloat(v) || 0), 0);
             }, 0);
+            const filtered = mntGetFilteredSortedEntries(client);
             const body = 'Hola,\n\n' +
-                'Te comparto el estado actualizado del contrato "' + client.name + '":\n\n' +
+                'Te adjunto el informe PDF actualizado y te resumo el estado del contrato "' + client.name + '":\n\n' +
                 '• Presupuesto inicial: ' + mntFormatCurrency(client.initialBudget) + '\n' +
                 '• Total consumido: ' + mntFormatCurrency(totalUsed) + ' (' + totalHours + ' horas registradas)\n' +
                 '• Presupuesto restante: ' + mntFormatCurrency(remaining) + '\n\n' +
                 'Un saludo,\nSol i Vent Paisajes S.L.';
+
             if (typeof openSuiteMailCompose === 'function') {
+                const attachments = [];
+                try {
+                    const pdfAtt = await buildMntSummaryPdfAttachment(client, filtered, totalUsed, remaining, totalHours);
+                    if (pdfAtt) attachments.push(pdfAtt);
+                } catch (err) {
+                    console.warn('No se pudo adjuntar el PDF automático:', err);
+                }
                 openSuiteMailCompose({
                     subject: `Estado bolsa de horas - ${client.name}`,
-                    body: body
+                    body,
+                    attachments
                 });
+            } else {
+                window.location.href = `mailto:?subject=${encodeURIComponent('Estado bolsa de horas - ' + client.name)}&body=${encodeURIComponent(body)}`;
             }
         }
 
@@ -17189,6 +17283,202 @@ ${snippet}`;
             const initialTab = new URLSearchParams(window.location.search).get('tab') || 'home';
             updateBrowserTabAppearance(initialTab);
         })();
+
+
+        // =========================================================================
+        // HIPERVÍNCULOS CLICABLES EN EL LECTOR DE CORREO CORPORATIVO
+        // =========================================================================
+        function linkifyPlainTextEscaped(rawText) {
+            const escaped = escapeHtml(rawText || '');
+            return escaped.replace(/(https?:\/\/[^\s<>"'()]+|www\.[^\s<>"'()]+)/gi, (match) => {
+                const href = match.toLowerCase().startsWith('http') ? match : ('https://' + match);
+                const safeHref = escapeHtml(sanitizeUrl(href));
+                return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="text-brand-600 dark:text-brand-400 underline font-semibold hover:text-brand-800 break-all">${match}</a>`;
+            });
+        }
+
+        function formatMailBodyWithLinks(msg) {
+            if (!msg) return '';
+            if (msg.bodyHtml) {
+                try {
+                    const doc = new DOMParser().parseFromString(String(msg.bodyHtml), 'text/html');
+                    if (doc && doc.body) {
+                        doc.querySelectorAll('style, script, head, meta, link').forEach(el => el.remove());
+                        const anchors = Array.from(doc.body.querySelectorAll('a[href]'));
+                        const extractedLinks = [];
+
+                        anchors.forEach(a => {
+                            const rawHref = (a.getAttribute('href') || '').trim();
+                            const safeHref = sanitizeUrl(rawHref);
+                            if (safeHref && safeHref !== '#' && !rawHref.toLowerCase().startsWith('mailto:')) {
+                                const label = (a.textContent || '').replace(/\s+/g, ' ').trim();
+                                extractedLinks.push({ label: label || safeHref, href: safeHref });
+                                const marker = `[[LINK_${extractedLinks.length - 1}]]`;
+                                a.replaceWith(doc.createTextNode(label ? `${label} (${marker})` : marker));
+                            }
+                        });
+
+                        doc.body.querySelectorAll('br').forEach(br => br.replaceWith(doc.createTextNode('\n')));
+                        doc.body.querySelectorAll('p, div, tr, li, h1, h2, h3, h4').forEach(el => {
+                            el.appendChild(doc.createTextNode('\n'));
+                        });
+
+                        const rawText = (doc.body.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+                        let rendered = linkifyPlainTextEscaped(rawText);
+
+                        extractedLinks.forEach((item, idx) => {
+                            const token = `[[LINK_${idx}]]`;
+                            const linkHtml = `<a href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-brand-600 dark:text-brand-400 underline font-bold hover:text-brand-800 break-all">${escapeHtml(item.href)} <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>`;
+                            rendered = rendered.split(token).join(linkHtml);
+                        });
+
+                        return rendered;
+                    }
+                } catch (e) {
+                    console.warn('Error parseando enlaces HTML del correo:', e);
+                }
+            }
+            return linkifyPlainTextEscaped(msg.bodyPlain || '');
+        }
+
+        // =========================================================================
+        // NOTIFICACIONES DE ESCRITORIO NATIVAS (WINDOWS / CHROME)
+        // =========================================================================
+        const desktopNotifiedNoteIds = new Set();
+
+        function updateDesktopNotificationButtonUI() {
+            const lbl = document.getElementById('desktopNotifyStatusLabel');
+            const btn = document.getElementById('btnDesktopNotifyToggle');
+            if (!lbl || !btn) return;
+            if (!('Notification' in window)) {
+                lbl.innerText = 'Sin soporte escritorio';
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                lbl.innerText = 'Avisos Escritorio: Activos';
+                btn.className = 'px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 text-xs font-bold rounded-lg transition border border-emerald-300 dark:border-emerald-700 flex items-center gap-1.5';
+            } else if (Notification.permission === 'denied') {
+                lbl.innerText = 'Avisos Bloqueados';
+            } else {
+                lbl.innerText = 'Activar Avisos Escritorio';
+            }
+        }
+
+        async function toggleDesktopNotifications() {
+            if (!('Notification' in window)) {
+                showToast('Tu navegador no admite notificaciones de escritorio');
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                new Notification('Sol i Vent · Suite de Herramientas', {
+                    body: 'Las notificaciones de escritorio ya están activadas correctamente.'
+                });
+                showToast('Notificaciones de escritorio activas');
+                return;
+            }
+            if (Notification.permission === 'denied') {
+                alert('Las notificaciones están bloqueadas en la configuración de este sitio en tu navegador. Haz clic en el icono de candado/ajustes junto a la barra de direcciones para permitirlas.');
+                return;
+            }
+            const perm = await Notification.requestPermission();
+            updateDesktopNotificationButtonUI();
+            if (perm === 'granted') {
+                new Notification('Sol i Vent · Avisos Activados', {
+                    body: 'Recibirás avisos en Windows cuando venza un recordatorio de tu agenda.'
+                });
+                showToast('Notificaciones de escritorio activadas');
+            }
+        }
+
+        function triggerDesktopNotificationForNote(note) {
+            if (!note || desktopNotifiedNoteIds.has(note.id)) return;
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            desktopNotifiedNoteIds.add(note.id);
+            try {
+                const n = new Notification(`Recordatorio: ${note.title}`, {
+                    body: note.content || 'Tienes un aviso activo en tu agenda de Sol i Vent.'
+                });
+                n.onclick = () => {
+                    window.focus();
+                    switchTab('notes');
+                    n.close();
+                };
+            } catch (e) {}
+        }
+
+        // =========================================================================
+        // ENVÍO POR CORREO CON PDF ADJUNTO DESDE ARBORSYSTEMS
+        // =========================================================================
+        async function sendArborParteByMailWithPdf(parteId) {
+            try {
+                showToast('Preparando parte PDF para adjuntar...');
+                const built = await buildArborPartePdfBytes(parteId);
+                if (!built) return;
+                const { fileName, pdfBytes, parte } = built;
+                const parsed = parseClientShippingFields(parte.clienteFull || parte.cliente, '');
+                const isCompleted = Boolean(parte.tecnico || parte.fechaRep || parte.descRep);
+
+                const body = isCompleted
+                    ? `Hola ${parsed.contactName || parsed.name || ''},\n\nTe adjuntamos el parte de trabajo y reparación finalizado correspondiente al equipo ArborSystems ${parte.equipo || ''} (Parte nº ${parte.numParte}).\n\nUn saludo,\nSol i Vent Paisajes S.L.`
+                    : `Hola ${parsed.contactName || parsed.name || ''},\n\nTe adjuntamos la hoja del parte de reparación nº ${parte.numParte} correspondiente a ${parte.cliente}.\n\nUn saludo,\nSol i Vent Paisajes S.L.`;
+
+                openSuiteMailCompose({
+                    to: parsed.email || '',
+                    subject: `Parte de reparación ArborSystems ${parte.numParte} - ${parte.cliente}`,
+                    body,
+                    attachments: [{
+                        name: fileName,
+                        mimeType: 'application/pdf',
+                        base64: arrayBufferToBase64(pdfBytes.buffer)
+                    }]
+                });
+            } catch (err) {
+                console.error(err);
+                showToast('No se pudo generar el PDF adjunto');
+            }
+        }
+
+        // =========================================================================
+        // DUPLICAR / CLONAR PARTES RECURRENTES (MANTENIMIENTO Y MAQUINARIA)
+        // =========================================================================
+        function mntDuplicateEntry(id) {
+            const client = mntGetCurrentClient();
+            const entry = (client.entries || []).find(it => it.id === id);
+            if (!entry) return;
+
+            document.getElementById('mnt-entry-id').value = '';
+            document.getElementById('mnt-form-date').value = new Date().toISOString().slice(0, 10);
+            document.getElementById('mnt-form-concept').value = entry.concept || '';
+            document.getElementById('mnt-form-workers').value = entry.workers || 1;
+            document.getElementById('mnt-form-worker-names').value = entry.workerNames || '';
+
+            const hMap = mntGetEntryHoursMap(entry);
+            mntRenderFormRateInputs(hMap);
+
+            document.getElementById('mnt-btn-save').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Parte Duplicado';
+            mntUpdateLiveFormTotal();
+            document.getElementById('mnt-work-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            showToast('Parte duplicado con fecha de hoy: ajusta las horas y guarda');
+        }
+
+        function duplicateMaqParte(id) {
+            const orig = getMaqPartes().find(p => p.id === id);
+            if (!orig) return;
+
+            openMaqParteModal();
+            setTimeout(() => {
+                document.getElementById('maqEditId').value = '';
+                document.getElementById('maqNumParte').value = getNextMaqParteNumber();
+                document.getElementById('maqMachineInput').value = orig.maquina || '';
+                document.getElementById('maqFechaCom').value = new Date().toISOString().slice(0, 10);
+                document.getElementById('maqPersonaCom').value = orig.personaCom || '';
+                document.getElementById('maqIncidencia').value = orig.incidencia || '';
+                document.getElementById('maqLugarRep').value = orig.lugarRep || '';
+                showToast('Incidencia duplicada con nuevo nº de parte y fecha de hoy');
+            }, 40);
+        }
+
+        updateDesktopNotificationButtonUI();
 
 </script>
 
