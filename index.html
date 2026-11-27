@@ -13532,6 +13532,9 @@ REGLAS:
             const subject = applyInternalNoticeVariables(tpl.subject, vars);
             const body = applyInternalNoticeVariables(tpl.body, vars);
 
+            const confirmMsg = `¿Enviar aviso "${tpl.label}" a ${recipient.name} (${recipient.email})?\n\n• Pedido / Albarán: ${vars.numero}\n• Cliente: ${vars.cliente}\n• Transporte: ${vars.agencia} (${vars.bultos})`;
+            if (!confirm(confirmMsg)) return;
+
             const origHtml = btnEl ? btnEl.innerHTML : null;
             if (btnEl) {
                 btnEl.disabled = true;
@@ -13652,6 +13655,9 @@ REGLAS:
 
             const subject = applyBatchVars(tpl.subject);
             const body = applyBatchVars(tpl.body);
+
+            const confirmBatchMsg = `¿Enviar aviso agrupado "${tpl.label}" con ${selectedItems.length} pedido(s) a ${recipient.name} (${recipient.email})?\n\n• Pedidos / Albaranes: ${numsList}`;
+            if (!confirm(confirmBatchMsg)) return;
 
             try {
                 const sentMode = await dispatchInternalEmailDirectOrMailto(recipient.email, subject, body);
@@ -13811,62 +13817,65 @@ REGLAS:
             const allVisibleChecked = pageInfo.visibleItems.length > 0 && pageInfo.visibleItems.every(it => selectedExpeditionIds.has(it.id));
 
             container.innerHTML = `
-                <table class="w-full text-left border-collapse text-xs">
+                <table class="w-full table-fixed text-left border-collapse text-xs">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700 text-[11px] uppercase text-gray-500 dark:text-gray-400">
-                            <th class="py-2 px-1.5 text-center w-7">
+                            <th class="py-2 px-1 text-center w-6">
                                 <input type="checkbox" ${allVisibleChecked ? 'checked' : ''} onchange="toggleSelectAllVisibleExpeditions(this.checked)" class="w-3.5 h-3.5 text-emerald-600 rounded border-gray-300 cursor-pointer" title="Seleccionar visibles para enviar aviso agrupado">
                             </th>
-                            <th class="py-2 px-2">Fecha</th>
-                            <th class="py-2 px-2">Nº Alb.</th>
-                            <th class="py-2 px-2">Cliente</th>
-                            <th class="py-2 px-2">Agencia</th>
-                            <th class="py-2 px-2">Bultos</th>
-                            <th class="py-2 px-2">Observaciones / Dir. Especial</th>
-                            <th class="py-2 px-2 text-center">Etiquetado</th>
-                            <th class="py-2 px-2">Aviso Responsable</th>
-                            <th class="py-2 px-2 text-right">Acciones</th>
+                            <th class="py-2 px-1.5 w-[78px]">Fecha</th>
+                            <th class="py-2 px-1.5 w-[64px]">Nº Alb.</th>
+                            <th class="py-2 px-1.5 w-[15%]">Cliente</th>
+                            <th class="py-2 px-1.5 w-[82px]">Agencia</th>
+                            <th class="py-2 px-1.5 w-[96px] hidden xl:table-cell">Bultos</th>
+                            <th class="py-2 px-1.5 w-[13%] hidden lg:table-cell">Observaciones</th>
+                            <th class="py-2 px-1 text-center w-[48px]" title="Etiquetado">Etiq.</th>
+                            <th class="py-2 px-1.5">Aviso Responsable</th>
+                            <th class="py-2 px-1.5 text-right w-[132px]">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
                         ${pageInfo.visibleItems.map(e => `
                             <tr onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" title="Haz clic para visualizar e imprimir el Albarán y el Checklist" class="cursor-pointer hover:bg-blue-50/70 dark:hover:bg-gray-700/40 transition ${e.labeled ? 'opacity-80' : ''}">
-                                <td class="py-2 px-1.5 text-center" onclick="event.stopPropagation()">
+                                <td class="py-2 px-1 text-center" onclick="event.stopPropagation()">
                                     <input type="checkbox" ${selectedExpeditionIds.has(e.id) ? 'checked' : ''} onchange="toggleExpeditionBatchSelect('${escapeJs(e.id)}')" class="w-3.5 h-3.5 text-emerald-600 rounded border-gray-300 cursor-pointer" title="Seleccionar para aviso agrupado">
                                 </td>
-                                <td class="py-2 px-2 whitespace-nowrap text-gray-500 dark:text-gray-400">${escapeHtml(e.date)} <span class="text-[10px]">${escapeHtml(e.time || '')}</span></td>
-                                <td class="py-2 px-2 font-mono font-bold text-brand-600 dark:text-brand-400 whitespace-nowrap underline decoration-dotted">${escapeHtml(e.docNum)}</td>
-                                <td class="py-2 px-2 font-semibold text-gray-900 dark:text-white max-w-[160px] truncate" title="${escapeHtml(e.clientRaw)}">${escapeHtml(e.clientName)}</td>
-                                <td class="py-2 px-2 whitespace-nowrap">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/40 text-brand-700 dark:text-brand-300 border border-blue-200 dark:border-blue-800">${escapeHtml(e.transport)}</span>
+                                <td class="py-2 px-1.5 text-gray-500 dark:text-gray-400 leading-tight">
+                                    <div class="whitespace-nowrap">${escapeHtml(e.date)}</div>
+                                    ${e.time ? `<div class="text-[10px] text-gray-400">${escapeHtml(e.time)}</div>` : ''}
                                 </td>
-                                <td class="py-2 px-2 whitespace-nowrap text-gray-600 dark:text-gray-300">${escapeHtml(e.bultos)}</td>
-                                <td class="py-2 px-2 max-w-[170px] truncate text-gray-500 dark:text-gray-400" title="${escapeHtml(e.observaciones)}">${e.observaciones ? escapeHtml(e.observaciones) : '<span class="italic text-gray-300 dark:text-gray-600">—</span>'}</td>
-                                <td class="py-2 px-2 text-center" onclick="event.stopPropagation()">
+                                <td class="py-2 px-1.5 font-mono font-bold text-brand-600 dark:text-brand-400 truncate underline decoration-dotted" title="${escapeHtml(e.docNum)}">${escapeHtml(e.docNum)}</td>
+                                <td class="py-2 px-1.5 font-semibold text-gray-900 dark:text-white truncate" title="${escapeHtml(e.clientRaw)}">${escapeHtml(e.clientName)}</td>
+                                <td class="py-2 px-1.5 truncate">
+                                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-900/40 text-brand-700 dark:text-brand-300 border border-blue-200 dark:border-blue-800 inline-block max-w-full truncate" title="${escapeHtml(e.transport)} · ${escapeHtml(e.bultos)}">${escapeHtml(e.transport)}</span>
+                                </td>
+                                <td class="py-2 px-1.5 truncate text-gray-600 dark:text-gray-300 hidden xl:table-cell" title="${escapeHtml(e.bultos)}">${escapeHtml(e.bultos)}</td>
+                                <td class="py-2 px-1.5 truncate text-gray-500 dark:text-gray-400 hidden lg:table-cell" title="${escapeHtml(e.observaciones)}">${e.observaciones ? escapeHtml(e.observaciones) : '<span class="italic text-gray-300 dark:text-gray-600">—</span>'}</td>
+                                <td class="py-2 px-1 text-center" onclick="event.stopPropagation()">
                                     <input type="checkbox" ${e.labeled ? 'checked' : ''} onchange="toggleExpeditionLabeled('${escapeJs(e.id)}')" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 cursor-pointer" title="Marcar cuando la etiqueta de transporte esté pegada">
                                 </td>
-                                <td class="py-2 px-2 whitespace-nowrap" onclick="event.stopPropagation()">
+                                <td class="py-2 px-1.5 min-w-0" onclick="event.stopPropagation()">
                                     <div class="flex flex-wrap items-center gap-1">
                                         ${internalTemplates.map((tpl, tIdx) => `
-                                            <button type="button" onclick="sendInternalOrderNotice('${escapeJs(e.id)}', '${escapeJs(tpl.id)}', this)" class="px-2 py-1 rounded-md text-[10px] font-bold transition flex items-center gap-1 ${tIdx === 0 ? 'bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-700' : (tIdx === 1 ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700' : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700')}" title="${escapeHtml(tpl.subject)}">
-                                                <i class="fa-solid fa-paper-plane text-[9px]"></i>
-                                                <span>${escapeHtml(tpl.label)}</span>
+                                            <button type="button" onclick="sendInternalOrderNotice('${escapeJs(e.id)}', '${escapeJs(tpl.id)}', this)" class="px-1.5 py-1 rounded-md text-[10px] font-bold transition inline-flex items-center gap-1 max-w-full ${tIdx === 0 ? 'bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-700' : (tIdx === 1 ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700' : 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700')}" title="${escapeHtml(tpl.subject)}">
+                                                <i class="fa-solid fa-paper-plane text-[9px] flex-shrink-0"></i>
+                                                <span class="truncate">${escapeHtml(tpl.label)}</span>
                                             </button>
                                         `).join('')}
                                     </div>
-                                    ${e.internalNotifiedTo ? `<div class="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5"><i class="fa-solid fa-check-double mr-0.5"></i>${escapeHtml(e.internalNotifiedTo)}: ${escapeHtml(e.internalNotifiedLabel || '')} (${escapeHtml(e.internalNotifiedTime || '')})</div>` : ''}
+                                    ${e.internalNotifiedTo ? `<div class="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5 truncate" title="${escapeHtml(e.internalNotifiedTo)}: ${escapeHtml(e.internalNotifiedLabel || '')} (${escapeHtml(e.internalNotifiedTime || '')})"><i class="fa-solid fa-check-double mr-0.5"></i>${escapeHtml(e.internalNotifiedTo)}: ${escapeHtml(e.internalNotifiedLabel || '')} (${escapeHtml(e.internalNotifiedTime || '')})</div>` : ''}
                                 </td>
-                                <td class="py-2 px-2 text-right whitespace-nowrap" onclick="event.stopPropagation()">
-                                    <button type="button" onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" class="px-2 py-1 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1 mr-1" title="Ver visualmente e imprimir Albarán y Checklist">
+                                <td class="py-2 px-1.5 text-right whitespace-nowrap" onclick="event.stopPropagation()">
+                                    <button type="button" onclick="openExpeditionVisualModal('${escapeJs(e.id)}', 'pack')" class="px-1.5 py-1 bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 rounded-lg text-[11px] font-bold transition inline-flex items-center gap-1 mr-0.5" title="Ver visualmente e imprimir Albarán y Checklist">
                                         <i class="fa-solid fa-eye"></i> <span>Ver</span>
                                     </button>
                                     <button type="button" onclick="openQuickMessageFromExpedition('${escapeJs(e.id)}')" class="p-1 text-emerald-600 hover:text-emerald-700 transition" title="Abrir editor de mensajes rápidos (Email / WhatsApp)">
                                         <i class="fa-solid fa-comment-dots"></i>
                                     </button>
-                                    <button type="button" onclick="copyExpeditionShippingSummary('${escapeJs(e.id)}')" class="p-1 text-gray-400 hover:text-brand-600 transition ml-1" title="Copiar datos de envío del cliente">
+                                    <button type="button" onclick="copyExpeditionShippingSummary('${escapeJs(e.id)}')" class="p-1 text-gray-400 hover:text-brand-600 transition ml-0.5" title="Copiar datos de envío del cliente">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <button type="button" onclick="deleteExpeditionEntry('${escapeJs(e.id)}')" class="p-1 text-gray-400 hover:text-red-500 transition ml-1" title="Eliminar registro">
+                                    <button type="button" onclick="deleteExpeditionEntry('${escapeJs(e.id)}')" class="p-1 text-gray-400 hover:text-red-500 transition ml-0.5" title="Eliminar registro">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                 </td>
