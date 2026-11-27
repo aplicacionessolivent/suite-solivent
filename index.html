@@ -2363,6 +2363,9 @@
                                     <button type="button" id="btnArchiveMailThread" onclick="archiveCurrentMailThread()" class="p-1.5 text-gray-600 dark:text-gray-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-700 rounded-lg transition" title="Archivar (sacar de Recibidos sin eliminar)">
                                         <i class="fa-solid fa-box-archive text-xs"></i>
                                     </button>
+                                    <button type="button" onclick="openSaveMailToProjectModal()" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Guardar este hilo de correo y sus adjuntos en el histórico de un Proyecto">
+                                        <i class="fa-solid fa-diagram-project"></i> <span>Guardar en Proyecto</span>
+                                    </button>
                                     <button type="button" onclick="exportCurrentMailThreadToPdf()" class="p-1.5 text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition" title="Guardar conversación como PDF">
                                         <i class="fa-solid fa-file-pdf text-xs"></i>
                                     </button>
@@ -2517,6 +2520,11 @@
                         <select id="prjStatusFilter" onchange="renderProjectsList()" class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-semibold focus:outline-none">
                             <option value="ACTIVE">Activos (No finalizados)</option>
                             <option value="ALL">Todos los Estados</option>
+                        </select>
+
+                        <select id="prjOwnerFilter" onchange="renderProjectsList()" class="py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-semibold focus:outline-none">
+                            <option value="ALL">Todos los Responsables</option>
+                            <option value="MINE">Mis Proyectos (Resp. / Equipo)</option>
                         </select>
                     </div>
 
@@ -4397,6 +4405,18 @@
                      class="home-module-card group relative p-5 h-full ${theme.card} border rounded-2xl shadow-sm hover:shadow-md transition cursor-grab active:cursor-grabbing flex items-center gap-3.5 select-none">
                     ${m.key === 'notes' ? '<span id="homeAlertsBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-red-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
                     ${m.key === 'mail' ? '<span id="homeMailUnreadBadge" class="hidden absolute top-3 right-3 px-2 py-0.5 bg-brand-600 text-white font-bold text-xs rounded-full shadow">0</span>' : ''}
+                    ${m.key === 'mantenimiento' ? (() => {
+                        const mAl = typeof mntGetContractAlerts === 'function' ? mntGetContractAlerts() : [];
+                        if (!mAl.length) return '';
+                        const isCrit = mAl.some(a => a.severity === 'critical');
+                        return `<span class="absolute top-3 right-3 px-2 py-0.5 ${isCrit ? 'bg-red-600' : 'bg-amber-500'} text-white font-bold text-[10px] rounded-full shadow" title="${escapeHtml(mAl.map(a => a.contractName + ': ' + a.text).join(' | '))}">${isCrit ? '≥95% Bolsa' : '≥80% Bolsa'}</span>`;
+                    })() : ''}
+                    ${m.key === 'proyectos' ? (() => {
+                        const pAl = typeof getUpcomingProjectDeadlines === 'function' ? getUpcomingProjectDeadlines() : [];
+                        if (!pAl.length) return '';
+                        const hasOverdue = pAl.some(a => a.severity === 'expired');
+                        return `<span class="absolute top-3 right-3 px-2 py-0.5 ${hasOverdue ? 'bg-red-600' : 'bg-indigo-600'} text-white font-bold text-[10px] rounded-full shadow" title="${pAl.length} proyecto(s) con entrega próxima o vencida">${pAl.length} entrega(s)</span>`;
+                    })() : ''}
                     <div class="opacity-75 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 absolute bottom-2 right-2 flex items-center gap-0.5">
                         <button type="button" onclick="event.stopPropagation(); openEditHomeModuleModal('${m.key}')" class="p-1.5 text-gray-500 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-white/80 dark:hover:bg-gray-700 rounded-lg transition text-xs" title="Editar título, descripción y color de esta tarjeta">
                             <i class="fa-solid fa-pen"></i>
@@ -10059,12 +10079,48 @@ REGLAS:
             renderHomeAlerts();
         }
 
+        function getUpcomingProjectDeadlines() {
+            if (typeof getProjectsList !== 'function') return [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const results = [];
+            getProjectsList().forEach(p => {
+                if (!p || !p.deadline || p.status === 'Finalizado') return;
+                const d = new Date(p.deadline + 'T00:00:00');
+                if (isNaN(d.getTime())) return;
+                const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 7) {
+                    results.push({
+                        project: p,
+                        diffDays,
+                        severity: diffDays < 0 ? 'expired' : (diffDays <= 2 ? 'urgent' : 'warning'),
+                        label: diffDays < 0
+                            ? `Fecha límite vencida hace ${Math.abs(diffDays)} día(s) (${p.deadline})`
+                            : diffDays === 0
+                                ? `¡Entrega HOY! (${p.deadline})`
+                                : `Entrega en ${diffDays} día(s) (${p.deadline})`
+                    });
+                }
+            });
+            return results.sort((a, b) => a.diffDays - b.diffDays);
+        }
+
+        function openProjectFromHomeAlert(prjId) {
+            switchTab('proyectos');
+            setTimeout(() => {
+                if (typeof getCurrentPrjSession === 'function' && getCurrentPrjSession()) {
+                    openProjectDetailModal(prjId);
+                }
+            }, 80);
+        }
+
         function renderHomeAlerts() {
             const now = Date.now();
             const notes = getNotes();
             const active = notes.filter(n => !n.dismissed && n.alertTimestamp && now >= n.alertTimestamp);
             const maqAlerts = typeof getUpcomingMaqExpiries === 'function' ? getUpcomingMaqExpiries() : [];
             const mntAlerts = typeof mntGetContractAlerts === 'function' ? mntGetContractAlerts() : [];
+            const prjAlerts = getUpcomingProjectDeadlines();
             
             const badge = document.getElementById('homeAlertsBadge');
             if (badge) {
@@ -10074,7 +10130,7 @@ REGLAS:
 
             const container = document.getElementById('homeAlertsList');
             if (container) {
-                if (active.length === 0 && maqAlerts.length === 0 && mntAlerts.length === 0) {
+                if (active.length === 0 && maqAlerts.length === 0 && mntAlerts.length === 0 && prjAlerts.length === 0) {
                     container.innerHTML = '<span class="text-gray-400">Sin avisos urgentes ni vencidos en este momento.</span>';
                 } else {
                     const notesHtml = active.map(n => `
@@ -10113,7 +10169,20 @@ REGLAS:
                         </div>
                     `).join('');
 
-                    container.innerHTML = mntHtml + maqHtml + notesHtml;
+                    const prjHtml = prjAlerts.map(item => `
+                        <div class="flex justify-between items-center ${item.severity === 'expired' ? 'bg-red-50/80 dark:bg-red-900/20 border-red-200 dark:border-red-800' : 'bg-indigo-50/80 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800'} p-2.5 rounded-lg border">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-diagram-project ${item.severity === 'expired' ? 'text-red-600' : 'text-indigo-600'}"></i>
+                                <div class="min-w-0">
+                                    <strong class="text-gray-900 dark:text-white truncate block">[${escapeHtml(item.project.code)}] ${escapeHtml(item.project.title)}</strong>
+                                    <div class="text-[11px] font-semibold ${item.severity === 'expired' ? 'text-red-700 dark:text-red-300' : 'text-indigo-800 dark:text-indigo-300'}">${escapeHtml(item.label)}${item.project.client ? ' · ' + escapeHtml(item.project.client) : ''}</div>
+                                </div>
+                            </div>
+                            <button type="button" onclick="openProjectFromHomeAlert('${escapeJs(item.project.id)}')" class="text-brand-600 dark:text-brand-400 hover:underline text-xs font-semibold flex-shrink-0 ml-2">Abrir proyecto</button>
+                        </div>
+                    `).join('');
+
+                    container.innerHTML = prjHtml + mntHtml + maqHtml + notesHtml;
                 }
             }
         }
@@ -11200,6 +11269,9 @@ REGLAS:
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <button type="button" onclick="saveMailSenderToContacts('${escapeJs(m.id)}')" class="px-2 py-1 bg-gray-100 hover:bg-emerald-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-emerald-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="Guardar remitente en la Agenda de Contactos">
                                         <i class="fa-solid fa-user-plus text-emerald-600"></i> Guardar contacto
+                                    </button>
+                                    <button type="button" onclick="openSaveMailToProjectModal('${escapeJs(m.id)}')" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="Guardar este mensaje y sus adjuntos en un Proyecto">
+                                        <i class="fa-solid fa-diagram-project text-indigo-600"></i> A Proyecto
                                     </button>
                                     <button type="button" onclick="createNoteFromMailMessage('${escapeJs(m.id)}')" class="px-2 py-1 bg-gray-100 hover:bg-amber-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-amber-700 rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="Crear Nota o Recordatorio en el Calendario desde este mensaje">
                                         <i class="fa-solid fa-calendar-plus text-amber-600"></i> Crear aviso
@@ -12807,7 +12879,9 @@ REGLAS:
         }
 
         function saveExpeditionHistory(list) {
-            localStorage.setItem('solivent_expeditions', JSON.stringify(list.slice(0, 300)));
+            const trimmed = list.slice(0, 300);
+            localStorage.setItem('solivent_expeditions', JSON.stringify(trimmed));
+            if (typeof mirrorCollectionToIDB === 'function') mirrorCollectionToIDB('solivent_expeditions', trimmed);
             renderExpeditionHistory();
         }
 
@@ -16431,6 +16505,7 @@ ${JSON.stringify(catalog)}`;
 
         function mntSaveState() {
             localStorage.setItem('gardening_app_state_v2', JSON.stringify(mntAppState));
+            if (typeof mirrorCollectionToIDB === 'function') mirrorCollectionToIDB('gardening_app_state_v2', mntAppState);
         }
 
         function mntGetCurrentClient() {
@@ -17173,7 +17248,17 @@ ${JSON.stringify(catalog)}`;
             mntResetForm();
             mntUpdateApp();
             if (typeof renderHomeAlerts === 'function') renderHomeAlerts();
-            showToast(id ? 'Parte actualizado' : 'Parte registrado');
+            if (typeof renderHomeModules === 'function') renderHomeModules();
+            const postUsed = (client.entries || []).reduce((acc, item) => acc + mntComputeEntryCost(client, item), 0);
+            const postInit = parseFloat(client.initialBudget) || 0;
+            const postPct = postInit > 0 ? (postUsed / postInit) * 100 : 0;
+            if (postPct >= 95) {
+                showToast(`⚠️ ${client.name} al ${postPct.toFixed(0)}% de bolsa (${mntFormatCurrency(postInit - postUsed)} disp.)`);
+            } else if (postPct >= 80) {
+                showToast(`Aviso: ${client.name} supera el 80% de bolsa (${postPct.toFixed(0)}%)`);
+            } else {
+                showToast(id ? 'Parte actualizado' : 'Parte registrado');
+            }
         }
 
         function mntEditEntry(id) {
@@ -19337,6 +19422,7 @@ ${snippet}`;
             const deletedSet = new Set(getDeletedProjectIds());
             const clean = (list || []).filter(p => p && !deletedSet.has(p.id));
             localStorage.setItem(PRJ_STORAGE_KEY, JSON.stringify(clean));
+            if (typeof mirrorCollectionToIDB === 'function') mirrorCollectionToIDB(PRJ_STORAGE_KEY, clean);
         }
 
         function sanitizeFolderName(str) {
@@ -19754,8 +19840,25 @@ ${snippet}`;
             const search = (document.getElementById('prjSearchInput')?.value || '').toLowerCase().trim();
             const typeFilter = document.getElementById('prjTypeFilter')?.value || 'ALL';
             const statusFilter = document.getElementById('prjStatusFilter')?.value || 'ACTIVE';
+            const ownerFilterEl = document.getElementById('prjOwnerFilter');
+            const ownerFilter = ownerFilterEl ? ownerFilterEl.value : 'ALL';
+            const activeUserLow = (getPrjActiveUser() || '').toLowerCase().trim();
 
-            const list = getProjectsList().filter(p => {
+            const allProjects = getProjectsList();
+            if (ownerFilterEl) {
+                const prevOwner = ownerFilterEl.value;
+                const leadNames = Array.from(new Set(allProjects.map(p => (p.lead || '').trim()).filter(Boolean))).sort();
+                ownerFilterEl.innerHTML = `
+                    <option value="ALL">Todos los Responsables</option>
+                    <option value="MINE">Mis Proyectos (Resp. / Equipo)</option>
+                    ${leadNames.map(n => `<option value="LEAD:${escapeHtml(n)}">Resp: ${escapeHtml(n)}</option>`).join('')}
+                `;
+                if (Array.from(ownerFilterEl.options).some(o => o.value === prevOwner)) {
+                    ownerFilterEl.value = prevOwner;
+                }
+            }
+
+            const list = allProjects.filter(p => {
                 const parcelsStr = getProjectParcels(p).map(x => x.address).join(' ').toLowerCase();
                 const matchSearch = !search ||
                     (p.code && p.code.toLowerCase().includes(search)) ||
@@ -19769,7 +19872,16 @@ ${snippet}`;
                     : statusFilter === 'ACTIVE'
                         ? p.status !== 'Finalizado'
                         : p.status === statusFilter;
-                return matchSearch && matchType && matchStatus;
+                let matchOwner = true;
+                if (ownerFilter === 'MINE') {
+                    const leadLow = (p.lead || '').toLowerCase();
+                    const partLow = (p.participants || '').toLowerCase();
+                    matchOwner = Boolean(activeUserLow) && (leadLow.includes(activeUserLow) || partLow.includes(activeUserLow));
+                } else if (ownerFilter.startsWith('LEAD:')) {
+                    const targetLead = ownerFilter.slice(5);
+                    matchOwner = (p.lead || '').trim() === targetLead;
+                }
+                return matchSearch && matchType && matchStatus && matchOwner;
             });
 
             if (list.length === 0) {
@@ -20257,10 +20369,30 @@ ${snippet}`;
             const startIdx = prjTimelinePageSize > 0 ? (prjTimelinePage - 1) * prjTimelinePageSize : 0;
             const visible = prjTimelinePageSize > 0 ? events.slice(startIdx, startIdx + prjTimelinePageSize) : events;
 
+            const currSess = getCurrentPrjSession();
+            const isAdminUser = currSess && currSess.role === 'Administrador';
+            const currUserNameLow = currSess ? String(currSess.name || '').trim().toLowerCase() : '';
+
             timelineEl.innerHTML = visible.map(ev => {
                 const liveMs = ev.milestoneId ? milestoneById.get(ev.milestoneId) : null;
                 const msColor = liveMs ? liveMs.color : ev.milestoneColor;
                 const cStyle = msColor ? (PRJ_COLOR_STYLES[msColor] || PRJ_COLOR_STYLES.emerald) : null;
+                const isSystemLog = ['Sistema', 'Estado', 'Alta', 'Documentación'].includes(ev.kind);
+                const isOwnNote = currUserNameLow && String(ev.author || '').trim().toLowerCase() === currUserNameLow;
+                const canModify = !isSystemLog && (isAdminUser || isOwnNote);
+                const editedBadge = ev.editedBy
+                    ? `<span class="text-[10px] italic text-gray-500 dark:text-gray-400 ml-1" title="Editado por ${escapeHtml(ev.editedBy)} el ${escapeHtml(ev.editedAtStr || '')}">(editado)</span>`
+                    : '';
+                const actionBtns = canModify ? `
+                    <span class="inline-flex items-center gap-1 ml-1.5">
+                        <button type="button" onclick="editProjectTimelineNote('${escapeJs(ev.id)}')" class="p-1 text-gray-400 hover:text-brand-600 rounded transition" title="Editar anotación">
+                            <i class="fa-solid fa-pen text-[10px]"></i>
+                        </button>
+                        <button type="button" onclick="deleteProjectTimelineNote('${escapeJs(ev.id)}')" class="p-1 text-gray-400 hover:text-red-500 rounded transition" title="Eliminar anotación">
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
+                        </button>
+                    </span>
+                ` : '';
 
                 if (cStyle) {
                     return `
@@ -20271,8 +20403,12 @@ ${snippet}`;
                                         <i class="fa-solid fa-star text-[9px]"></i> HITO
                                     </span>
                                     <span>${escapeHtml(ev.author || 'Equipo')}</span>
+                                    ${editedBadge}
                                 </span>
-                                <span class="text-[11px] text-gray-500 dark:text-gray-300 font-mono font-semibold">${escapeHtml(ev.dateStr || '')}</span>
+                                <div class="flex items-center">
+                                    <span class="text-[11px] text-gray-500 dark:text-gray-300 font-mono font-semibold">${escapeHtml(ev.dateStr || '')}</span>
+                                    ${actionBtns}
+                                </div>
                             </div>
                             <p class="text-gray-900 dark:text-white font-bold whitespace-pre-line leading-relaxed">${escapeHtml(ev.text)}</p>
                         </div>
@@ -20285,8 +20421,12 @@ ${snippet}`;
                             <span class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
                                 <span class="px-1.5 py-0.5 rounded bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300 text-[10px]">${escapeHtml(ev.kind || 'Nota')}</span>
                                 <span>${escapeHtml(ev.author || 'Equipo')}</span>
+                                ${editedBadge}
                             </span>
-                            <span class="text-[11px] text-gray-400 font-mono">${escapeHtml(ev.dateStr || '')}</span>
+                            <div class="flex items-center">
+                                <span class="text-[11px] text-gray-400 font-mono">${escapeHtml(ev.dateStr || '')}</span>
+                                ${actionBtns}
+                            </div>
                         </div>
                         <p class="text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">${escapeHtml(ev.text)}</p>
                     </div>
@@ -21020,6 +21160,288 @@ Sol i Vent Paisajes S.L.`,
             await syncProjectsWithServer(false);
             showToast(`Proyecto ${targetPrj.code} eliminado y archivado en _Eliminados`);
         }
+
+        // =========================================================================
+        // EDICIÓN Y BORRADO CONTROLADO DE ANOTACIONES EN HISTÓRICO DE PROYECTOS
+        // =========================================================================
+        async function editProjectTimelineNote(evId) {
+            if (!currentDetailProjectId) return;
+            const sess = getCurrentPrjSession();
+            if (!sess) return;
+            const list = getProjectsList();
+            const prj = list.find(p => p.id === currentDetailProjectId);
+            if (!prj) return;
+            const ev = (prj.timeline || []).find(item => item.id === evId);
+            if (!ev) return;
+
+            const isAdmin = sess.role === 'Administrador';
+            const isOwn = String(ev.author || '').trim().toLowerCase() === String(sess.name || '').trim().toLowerCase();
+            if (!isAdmin && !isOwn) {
+                alert('Solo el autor de la anotación o un Administrador puede editarla.');
+                return;
+            }
+
+            const newText = prompt('Editar texto de la anotación:', ev.text || '');
+            if (newText === null) return;
+            const cleanText = newText.trim();
+            if (!cleanText || cleanText === ev.text) return;
+
+            const now = Date.now();
+            const updatedList = list.map(p => {
+                if (p.id !== currentDetailProjectId) return p;
+                return {
+                    ...p,
+                    updatedAt: now,
+                    timeline: (p.timeline || []).map(item => item.id === evId ? {
+                        ...item,
+                        text: cleanText,
+                        editedBy: sess.name,
+                        editedAtStr: new Date(now).toLocaleString('es-ES')
+                    } : item)
+                };
+            });
+
+            saveProjectsLocal(updatedList);
+            renderCurrentProjectTimeline();
+            renderProjectsList();
+            await syncProjectsWithServer(false);
+            showToast('Anotación actualizada');
+        }
+
+        async function deleteProjectTimelineNote(evId) {
+            if (!currentDetailProjectId) return;
+            const sess = getCurrentPrjSession();
+            if (!sess) return;
+            const list = getProjectsList();
+            const prj = list.find(p => p.id === currentDetailProjectId);
+            if (!prj) return;
+            const ev = (prj.timeline || []).find(item => item.id === evId);
+            if (!ev) return;
+
+            const isAdmin = sess.role === 'Administrador';
+            const isOwn = String(ev.author || '').trim().toLowerCase() === String(sess.name || '').trim().toLowerCase();
+            if (!isAdmin && !isOwn) {
+                alert('Solo el autor de la anotación o un Administrador puede eliminarla.');
+                return;
+            }
+
+            if (!confirm('¿Eliminar esta anotación del histórico del proyecto?')) return;
+
+            const now = Date.now();
+            const updatedList = list.map(p => {
+                if (p.id !== currentDetailProjectId) return p;
+                const filtered = (p.timeline || []).filter(item => item.id !== evId);
+                filtered.unshift({
+                    id: 'ev_' + now,
+                    ts: now,
+                    dateStr: new Date(now).toLocaleString('es-ES'),
+                    author: sess.name,
+                    kind: 'Sistema',
+                    text: `Anotación eliminada (${ev.author || 'Equipo'} · ${ev.dateStr || ''}).`
+                });
+                return { ...p, updatedAt: now, timeline: filtered };
+            });
+
+            saveProjectsLocal(updatedList);
+            renderCurrentProjectTimeline();
+            renderProjectsList();
+            await syncProjectsWithServer(false);
+            showToast('Anotación eliminada');
+        }
+
+        // =========================================================================
+        // VINCULAR CORREO CORPORATIVO -> PROYECTO (BITÁCORA + ADJUNTOS)
+        // =========================================================================
+        function renderSaveMailToProjectOptions() {
+            const sel = document.getElementById('smtpProjectSelect');
+            if (!sel) return;
+            const q = (document.getElementById('smtpProjectFilter')?.value || '').toLowerCase().trim();
+            const projects = getProjectsList().filter(p => {
+                if (!q) return true;
+                return `${p.code || ''} ${p.title || ''} ${p.client || ''}`.toLowerCase().includes(q);
+            });
+            if (projects.length === 0) {
+                sel.innerHTML = '<option value="">-- No hay proyectos que coincidan --</option>';
+                return;
+            }
+            sel.innerHTML = projects.map(p =>
+                `<option value="${escapeHtml(p.id)}">[${escapeHtml(p.code)}] ${escapeHtml(p.title)}${p.client ? ' — ' + escapeHtml(p.client) : ''}</option>`
+            ).join('');
+        }
+
+        function openSaveMailToProjectModal(specificMsgId = '') {
+            if (!activeMailThreadData || !Array.isArray(activeMailThreadData.messages) || activeMailThreadData.messages.length === 0) {
+                showToast('Abre primero una conversación de correo');
+                return;
+            }
+            const projects = getProjectsList();
+            if (projects.length === 0) {
+                alert('Aún no hay proyectos creados. Crea primero un proyecto en el módulo Gestión de Proyectos.');
+                return;
+            }
+
+            document.getElementById('smtpMailMsgId').value = specificMsgId || '';
+            document.getElementById('smtpProjectFilter').value = '';
+            renderSaveMailToProjectOptions();
+
+            const targetMsgs = specificMsgId
+                ? activeMailThreadData.messages.filter(m => m.id === specificMsgId)
+                : activeMailThreadData.messages;
+            const lastMsg = targetMsgs[targetMsgs.length - 1] || activeMailThreadData.messages[0];
+            const subj = activeMailThreadData.subject || lastMsg.subject || '(Sin asunto)';
+            const snippet = (lastMsg.bodyPlain || '').replace(/\s+/g, ' ').trim().slice(0, 320);
+
+            document.getElementById('smtpSummaryText').value =
+                `Correo "${subj}" · De: ${lastMsg.from || ''} (${lastMsg.date || ''})` +
+                (snippet ? `\nResumen: ${snippet}` : '');
+
+            const allAtts = targetMsgs.flatMap(m => (m.attachments || []).map(a => ({ ...a, msgId: m.id })));
+            const attWrap = document.getElementById('smtpIncludeAttachmentsWrap');
+            const attChk = document.getElementById('smtpIncludeAttachments');
+            const attLbl = document.getElementById('smtpIncludeAttachmentsLabel');
+            if (allAtts.length > 0) {
+                attWrap.classList.remove('hidden');
+                attChk.checked = true;
+                attLbl.innerText = `Guardar también los ${allAtts.length} archivo(s) adjunto(s) en la carpeta del proyecto`;
+            } else {
+                attWrap.classList.add('hidden');
+                attChk.checked = false;
+            }
+
+            document.getElementById('saveMailToProjectModal').classList.remove('hidden');
+        }
+
+        function closeSaveMailToProjectModal() {
+            document.getElementById('saveMailToProjectModal').classList.add('hidden');
+        }
+
+        async function submitSaveMailToProject(e) {
+            e.preventDefault();
+            const prjId = document.getElementById('smtpProjectSelect').value;
+            const summaryText = document.getElementById('smtpSummaryText').value.trim();
+            const specificMsgId = document.getElementById('smtpMailMsgId').value;
+            const includeAtts = document.getElementById('smtpIncludeAttachments').checked;
+            if (!prjId || !summaryText || !activeMailThreadData) return;
+
+            const prj = getProjectsList().find(p => p.id === prjId);
+            if (!prj) return;
+
+            const btn = document.getElementById('btnSubmitMailToProject');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Guardando...</span>'; }
+
+            try {
+                const author = getPrjActiveUser() || 'Correo';
+                const now = Date.now();
+                const dateStr = new Date(now).toLocaleString('es-ES');
+                const addedDocs = [];
+
+                const targetMsgs = specificMsgId
+                    ? activeMailThreadData.messages.filter(m => m.id === specificMsgId)
+                    : activeMailThreadData.messages;
+
+                const hasServer = await ensurePrjFolderPermission(false);
+                let subDir = null;
+                if (hasServer) {
+                    try { subDir = await ensureProjectSubdirHandle(prj, true); } catch (err) {}
+                }
+
+                if (includeAtts) {
+                    for (const m of targetMsgs) {
+                        for (const att of (m.attachments || [])) {
+                            try {
+                                const file = await fetchGmailAttachmentAsFile(m.id, att.attachmentId, att.name, att.mimeType);
+                                const sizeStr = file.size < 1024 * 1024
+                                    ? `${Math.max(1, Math.round(file.size / 1024))} KB`
+                                    : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+                                if (subDir) {
+                                    const fh = await subDir.getFileHandle(file.name, { create: true });
+                                    const w = await fh.createWritable();
+                                    await w.write(file);
+                                    await w.close();
+                                }
+                                await saveProjectBlobFallbackIDB(prj.id, file.name, file);
+                                addedDocs.push({ name: file.name, sizeStr, author, dateStr, ts: now });
+                            } catch (attErr) {
+                                console.warn('No se pudo adjuntar archivo del correo:', att.name, attErr);
+                            }
+                        }
+                    }
+                }
+
+                const newEvents = [{ id: 'ev_' + now, ts: now, dateStr, author, kind: 'Correo', text: summaryText }];
+                if (addedDocs.length > 0) {
+                    newEvents.unshift({
+                        id: 'ev_' + (now + 1),
+                        ts: now + 1,
+                        dateStr,
+                        author,
+                        kind: 'Documentación',
+                        text: `Adjunto(s) desde correo: ${addedDocs.map(d => d.name).join(', ')}`
+                    });
+                }
+
+                const updatedList = getProjectsList().map(item => {
+                    if (item.id !== prj.id) return item;
+                    const existingDocs = (item.documents || []).filter(d => !addedDocs.some(ad => ad.name === d.name));
+                    return {
+                        ...item,
+                        updatedAt: now + 1,
+                        documents: [...addedDocs, ...existingDocs],
+                        timeline: [...newEvents, ...(item.timeline || [])]
+                    };
+                });
+
+                saveProjectsLocal(updatedList);
+                if (hasServer) await syncProjectsWithServer(false);
+                if (typeof renderProjectsList === 'function') renderProjectsList();
+                if (currentDetailProjectId === prj.id) renderProjectDetailModal(prj.id);
+
+                closeSaveMailToProjectModal();
+                showToast(`Guardado en proyecto ${prj.code}${addedDocs.length ? ` (+${addedDocs.length} adj.)` : ''}`);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Guardar en Proyecto</span>'; }
+            }
+        }
+
+        // =========================================================================
+        // ESPEJO AUTOMÁTICO DE COLECCIONES PESADAS EN INDEXEDDB (ANTI-LÍMITE 5 MB)
+        // =========================================================================
+        const IDB_MIRROR_KEYS = ['solivent_expeditions', 'solivent_proyectos_v1', 'gardening_app_state_v2'];
+
+        async function mirrorCollectionToIDB(storageKey, dataValue) {
+            try {
+                const db = await openPartesDB();
+                const tx = db.transaction('files', 'readwrite');
+                tx.objectStore('files').put({ key: 'idb_mirror_' + storageKey, data: dataValue, updatedAt: Date.now() });
+            } catch (e) {}
+        }
+
+        async function restoreMissingCollectionsFromIDB() {
+            try {
+                const db = await openPartesDB();
+                let restoredAny = false;
+                for (const k of IDB_MIRROR_KEYS) {
+                    const localRaw = localStorage.getItem(k);
+                    if (!localRaw || localRaw === '[]') {
+                        const rec = await new Promise(resolve => {
+                            const tx = db.transaction('files', 'readonly');
+                            const req = tx.objectStore('files').get('idb_mirror_' + k);
+                            req.onsuccess = () => resolve(req.result || null);
+                            req.onerror = () => resolve(null);
+                        });
+                        if (rec && rec.data) {
+                            localStorage.setItem(k, JSON.stringify(rec.data));
+                            restoredAny = true;
+                        }
+                    } else {
+                        try { mirrorCollectionToIDB(k, JSON.parse(localRaw)); } catch (e) {}
+                    }
+                }
+                if (restoredAny && typeof renderHomeModules === 'function') renderHomeModules();
+            } catch (e) {}
+        }
+
+        setTimeout(() => { restoreMissingCollectionsFromIDB(); }, 250);
 </script>
 
     <!-- Modal Visor Visual e Impresión de Albarán y Checklist desde Historial -->
@@ -21238,6 +21660,43 @@ Sol i Vent Paisajes S.L.`,
                 <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <button type="button" onclick="closeCustomAppTitleModal()" class="px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold">Cancelar</button>
                     <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-bold">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Guardar Correo en Proyecto -->
+    <div id="saveMailToProjectModal" class="fixed inset-0 bg-black/65 backdrop-blur-sm flex items-center justify-center hidden z-[85] p-4" onclick="if(event.target===this) closeSaveMailToProjectModal()">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project text-indigo-600"></i> <span>Vincular Correo a un Proyecto</span>
+                </h3>
+                <button type="button" onclick="closeSaveMailToProjectModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="submitSaveMailToProject(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="smtpMailMsgId" value="">
+                <div>
+                    <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Filtrar Proyecto:</label>
+                    <input type="text" id="smtpProjectFilter" oninput="renderSaveMailToProjectOptions()" placeholder="Buscar por código PRY-2026, cliente o título..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-xs">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Proyecto destino *</label>
+                    <select id="smtpProjectSelect" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 font-bold text-xs text-gray-900 dark:text-white"></select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 dark:text-gray-300 mb-1">Nota / Resumen para el histórico del proyecto *</label>
+                    <textarea id="smtpSummaryText" rows="5" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-xs leading-relaxed"></textarea>
+                </div>
+                <label id="smtpIncludeAttachmentsWrap" class="flex items-center gap-2 p-2.5 bg-indigo-50/70 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800 cursor-pointer select-none">
+                    <input type="checkbox" id="smtpIncludeAttachments" checked class="w-4 h-4 text-indigo-600 rounded">
+                    <span id="smtpIncludeAttachmentsLabel" class="font-semibold text-indigo-950 dark:text-indigo-200">Guardar también los archivos adjuntos en la carpeta del proyecto</span>
+                </label>
+                <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                    <button type="button" onclick="closeSaveMailToProjectModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl font-semibold">Cancelar</button>
+                    <button type="submit" id="btnSubmitMailToProject" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> <span>Guardar en Proyecto</span>
+                    </button>
                 </div>
             </form>
         </div>
