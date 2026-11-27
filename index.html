@@ -4200,6 +4200,24 @@
             document.documentElement.classList.toggle('dark');
         });
 
+        (function installStorageQuotaGuard() {
+            const origSetItem = Storage.prototype.setItem;
+            let quotaWarned = false;
+            Storage.prototype.setItem = function(key, value) {
+                try {
+                    return origSetItem.call(this, key, value);
+                } catch (err) {
+                    if (err && (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014)) {
+                        if (!quotaWarned) {
+                            quotaWarned = true;
+                            alert('AVISO DE ALMACENAMIENTO LLENO: El navegador ha alcanzado el límite local (~5 MB). Descarga una Copia General de seguridad y limpia registros antiguos del historial.');
+                        }
+                    }
+                    throw err;
+                }
+            };
+        })();
+
         function showToast(msg) {
             const toast = document.getElementById('toastNotification');
             document.getElementById('toastText').innerText = msg;
@@ -5899,11 +5917,11 @@
 
         function sanitizeUrl(rawUrl) {
             const val = String(rawUrl || '').trim();
-            if (!val) return '#';
+            if (!val || val.startsWith('//')) return '#';
             try {
                 const parsed = new URL(val, 'https://example.invalid');
-                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                    return val;
+                if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.origin !== 'https://example.invalid') {
+                    return parsed.href;
                 }
             } catch (e) {}
             return '#';
@@ -10040,8 +10058,13 @@ REGLAS:
         const GMAIL_SCOPES = "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send";
 
         function loadStoredGmailToken() {
-            const tok = localStorage.getItem('solivent_gmail_token') || sessionStorage.getItem('solivent_gmail_token') || null;
-            const exp = parseInt(localStorage.getItem('solivent_gmail_token_exp') || sessionStorage.getItem('solivent_gmail_token_exp') || '0', 10);
+            // Limpiar posibles tokens antiguos persistidos en disco (localStorage)
+            try {
+                localStorage.removeItem('solivent_gmail_token');
+                localStorage.removeItem('solivent_gmail_token_exp');
+            } catch (e) {}
+            const tok = sessionStorage.getItem('solivent_gmail_token') || null;
+            const exp = parseInt(sessionStorage.getItem('solivent_gmail_token_exp') || '0', 10);
             if (tok && exp && Date.now() < exp) {
                 return { token: tok, expiresAt: exp };
             }
@@ -10061,12 +10084,9 @@ REGLAS:
             gmailAccessToken = token;
             gmailTokenExpiresAt = Date.now() + Math.max(300, (expiresInSec - 120)) * 1000;
             try {
-                localStorage.setItem('solivent_gmail_token', gmailAccessToken);
-                localStorage.setItem('solivent_gmail_token_exp', String(gmailTokenExpiresAt));
+                sessionStorage.setItem('solivent_gmail_token', gmailAccessToken);
+                sessionStorage.setItem('solivent_gmail_token_exp', String(gmailTokenExpiresAt));
                 localStorage.setItem('solivent_gmail_was_connected', '1');
-                // Limpiar claves antiguas de sessionStorage si quedaran
-                sessionStorage.removeItem('solivent_gmail_token');
-                sessionStorage.removeItem('solivent_gmail_token_exp');
             } catch (e) {}
             scheduleGmailSilentRefresh();
         }
@@ -14389,7 +14409,7 @@ REGLAS:
             btn.disabled = true;
             btn.innerText = 'Probando...';
             try {
-                const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', {
+                const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -15991,7 +16011,7 @@ REGLAS:
                     })
                 };
                 if (abortSignal) fetchOpts.signal = abortSignal;
-                response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent', fetchOpts);
+                response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', fetchOpts);
             } catch (netErr) {
                 if (netErr && netErr.name === 'AbortError') {
                     throw new Error(exportAbortFlag ? 'EXPORT_CANCELLED' : 'La conexión con Gemini fue interrumpida.');
@@ -18560,13 +18580,41 @@ ${snippet}`;
         let prjDocsSortDesc = true;
         window._pendingCalendarProjectId = null;
 
-        async function hashPrjPassword(plain) {
+        async function hashPrjPassword(plain, existingSaltHex = null) {
             const str = String(plain || '').trim();
             if (window.crypto && window.crypto.subtle) {
-                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('solivent_prj_' + str));
-                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                const saltBytes = existingSaltHex
+                    ? new Uint8Array(existingSaltHex.match(/.{1,2}/g).map(b => parseInt(b, 16)))
+                    : crypto.getRandomValues(new Uint8Array(16));
+                const saltHex = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+                const keyMat = await crypto.subtle.importKey('raw', new TextEncoder().encode(str), 'PBKDF2', false, ['deriveBits']);
+                const derived = await crypto.subtle.deriveBits(
+                    { name: 'PBKDF2', salt: saltBytes, iterations: 120000, hash: 'SHA-256' },
+                    keyMat,
+                    256
+                );
+                const hashHex = Array.from(new Uint8Array(derived)).map(b => b.toString(16).padStart(2, '0')).join('');
+                return `pbkdf2$${saltHex}$${hashHex}`;
             }
             return 'plain_' + btoa(unescape(encodeURIComponent(str)));
+        }
+
+        async function verifyPrjPassword(plain, storedHash) {
+            const str = String(plain || '').trim();
+            const stored = String(storedHash || '');
+            if (stored.startsWith('pbkdf2$')) {
+                const parts = stored.split('$');
+                if (parts.length !== 3) return false;
+                const recomputed = await hashPrjPassword(str, parts[1]);
+                return recomputed === stored;
+            }
+            // Compatibilidad con hashes SHA-256 anteriores
+            if (window.crypto && window.crypto.subtle) {
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('solivent_prj_' + str));
+                const legacyHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                return legacyHash === stored;
+            }
+            return ('plain_' + btoa(unescape(encodeURIComponent(str)))) === stored;
         }
 
         function getPrjUsers() {
@@ -19030,10 +19078,16 @@ ${snippet}`;
             const user = users.find(u => u.id === userId);
             if (!user) return;
 
-            const hash = await hashPrjPassword(pass);
-            if (hash !== user.passHash) {
+            const isValidPass = await verifyPrjPassword(pass, user.passHash);
+            if (!isValidPass) {
                 alert('Contraseña incorrecta.');
                 return;
+            }
+            // Migrar automáticamente hashes antiguos SHA-256 a PBKDF2 con sal aleatoria al iniciar sesión
+            if (!String(user.passHash || '').startsWith('pbkdf2$')) {
+                user.passHash = await hashPrjPassword(pass);
+                savePrjUsers(users);
+                syncProjectsWithServer(false).catch(() => {});
             }
             document.getElementById('prjLoginPassInput').value = '';
             setCurrentPrjSession(user);
